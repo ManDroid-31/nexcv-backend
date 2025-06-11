@@ -4,8 +4,6 @@ AI-powered resume builder backend — modular, clean Express.js setup using Mong
 
 ## ✅ Tech Stack
 
-
-
 - Express.js + TypeScript
 - MongoDB + Mongoose
 - Zod (validation)
@@ -21,7 +19,7 @@ AI-powered resume builder backend — modular, clean Express.js setup using Mong
 - [x] Setup Express server + folder structure
 - [x] MongoDB + Mongoose config
 - [x] Resume CRUD API endpoints created
-- [ ] Resume CRUD API endpoints tested 
+- [ ] Resume CRUD API endpoints tested
 - [ ] Zod validation
 - [x] JWT Auth / Clerk Auth
 - [ ] AI suggestions (OpenAI)

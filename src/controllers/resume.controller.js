@@ -81,9 +81,10 @@ export const updateResume = async (req, res) => {
       return res.status(404).json({ error: "Resume not found" });
     }
 
-    const slug = title !== existingResume.title
-      ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-      : existingResume.slug;
+    const slug =
+      title !== existingResume.title
+        ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+        : existingResume.slug;
 
     const updatedResume = await prisma.resume.update({
       where: { id },
@@ -128,4 +129,4 @@ export const deleteResume = async (req, res) => {
     console.error("Error deleting resume:", error);
     res.status(500).json({ error: "Failed to delete resume" });
   }
-}; 
+};

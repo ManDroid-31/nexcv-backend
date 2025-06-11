@@ -20,4 +20,4 @@ router.get("/:id", getResumeById);
 router.put("/:id", updateResume);
 router.delete("/:id", deleteResume);
 
-export default router; 
+export default router;

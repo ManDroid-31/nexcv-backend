@@ -25,15 +25,11 @@ app.get("/health", (req, res) => {
   res.send("NexCV Backend is healthy!");
 });
 
-
 // Protected routes
 app.use("/api/resumes", resumeRoutes);
 
-
-//custom route to serve as clerk backend working 
+//custom route to serve as clerk backend working
 app.use("/api/protected", protectedRoute);
-
-
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

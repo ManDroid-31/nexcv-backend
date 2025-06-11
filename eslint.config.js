@@ -8,14 +8,14 @@ export default [
     languageOptions: {
       globals: {
         ...globals.node,
-        ...globals.es2021
+        ...globals.es2021,
       },
       ecmaVersion: 2021,
-      sourceType: "module"
+      sourceType: "module",
     },
     rules: {
-      ...js.configs.recommended.rules
-    }
+      ...js.configs.recommended.rules,
+    },
   },
-  prettier
+  prettier,
 ];
