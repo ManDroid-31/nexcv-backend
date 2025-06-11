@@ -1,11 +1,11 @@
 import express from "express";
 import { clerkMiddleware } from "../middlewares/clerkAuth.middleware.js";
 import {
-  createResume,
-  getAllResumes,
-  getResumeById,
-  updateResume,
-  deleteResume,
+    createResume,
+    getAllResumes,
+    getResumeById,
+    updateResume,
+    deleteResume,
 } from "../controllers/resume.controller.js";
 
 const router = express.Router();

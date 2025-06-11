@@ -3,19 +3,19 @@ import globals from "globals";
 import prettier from "eslint-config-prettier";
 
 export default [
-  {
-    files: ["**/*.{js,mjs,cjs}"],
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.es2021,
-      },
-      ecmaVersion: 2021,
-      sourceType: "module",
+    {
+        files: ["**/*.{js,mjs,cjs}"],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+                ...globals.es2021,
+            },
+            ecmaVersion: 2021,
+            sourceType: "module",
+        },
+        rules: {
+            ...js.configs.recommended.rules,
+        },
     },
-    rules: {
-      ...js.configs.recommended.rules,
-    },
-  },
-  prettier,
+    prettier,
 ];

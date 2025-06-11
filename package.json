@@ -1,40 +1,40 @@
 {
-  "name": "nexcv_backend",
-  "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "lint": "eslint . --ext .js",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "dev": "nodemon src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "@clerk/backend": "^2.0.0",
-    "@clerk/clerk-sdk-node": "^4.13.23",
-    "@clerk/express": "^1.6.0",
-    "@prisma/client": "^6.9.0",
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.17.0",
-    "mongoose": "^8.15.1",
-    "zod": "^3.25.56"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.28.0",
-    "eslint": "^9.28.0",
-    "eslint-config-prettier": "^10.1.5",
-    "globals": "^16.2.0",
-    "nodemon": "^3.1.10",
-    "prettier": "^3.5.3",
-    "prisma": "^6.9.0"
-  }
+    "name": "nexcv_backend",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "lint": "eslint . --ext .js",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "dev": "nodemon src/app.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "@clerk/backend": "^2.0.0",
+        "@clerk/clerk-sdk-node": "^4.13.23",
+        "@clerk/express": "^1.6.0",
+        "@prisma/client": "^6.9.0",
+        "bcrypt": "^6.0.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.5.0",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "mongodb": "^6.17.0",
+        "mongoose": "^8.15.1",
+        "zod": "^3.25.56"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.28.0",
+        "eslint": "^9.28.0",
+        "eslint-config-prettier": "^10.1.5",
+        "globals": "^16.2.0",
+        "nodemon": "^3.1.10",
+        "prettier": "^3.5.3",
+        "prisma": "^6.9.0"
+    }
 }

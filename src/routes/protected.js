@@ -12,17 +12,17 @@ const protectedRoute = express.Router();
 
 // ✅ Protect route using requireAuth
 protectedRoute.get(
-  "/me",
-  (req, res, next) => {
-    requireAuth();
-    next();
-  },
-  (req, res) => {
-    // console.log(req.auth);
-    // console.log("inside get /me");
-    const userId = req.auth?.userId;
-    res.json({ message: `Hello 👋 Clerk user: ${userId}`, userInfo: req.auth() });
-  }
+    "/me",
+    (req, res, next) => {
+        requireAuth();
+        next();
+    },
+    (req, res) => {
+        // console.log(req.auth);
+        // console.log("inside get /me");
+        const userId = req.auth?.userId;
+        res.json({ message: `Hello 👋 Clerk user: ${userId}`, userInfo: req.auth() });
+    }
 );
 
 export default protectedRoute;

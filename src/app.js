@@ -18,11 +18,11 @@ app.use(authMiddleware); // Apply Clerk middleware globally
 
 // Public routes
 app.get("/", (req, res) => {
-  res.send("NexCV Backend is live!");
+    res.send("NexCV Backend is live!");
 });
 
 app.get("/health", (req, res) => {
-  res.send("NexCV Backend is healthy!");
+    res.send("NexCV Backend is healthy!");
 });
 
 // Protected routes
@@ -32,5 +32,5 @@ app.use("/api/resumes", resumeRoutes);
 app.use("/api/protected", protectedRoute);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
