@@ -3,13 +3,89 @@
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// schema.prisma
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "mongodb"       // you chose MongoDB
   url      = env("DATABASE_URL")
 }
+
+// Track your users (linked to Clerk)
+model User {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  clerkUserId    String   @unique
+  email          String
+  name           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  resumes        Resume[]
+  creditBalance  Int      @default(0)
+  transactions   CreditTransaction[]
+}
+
+// Each resume holds whatever JSON your templates expect
+model Resume {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  title        String
+  slug         String   @unique
+  data         Json
+  template     String   // e.g. "gengar", "azuril", etc.
+  visibility   String   @default("private")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Simple ledger of credit changes
+model CreditTransaction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  type        String   // "earn" or "spend"
+  amount      Int
+  reason      String   // e.g. "daily_bonus", "download_pdf", "ai_suggestion"
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Optional: Predefined templates for later admin UI or validation
+model Template {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique   // matches `Resume.template`
+  name        String
+  description String?
+  metadata    Json?    // Stores additional template information
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+//example metadata
+// {
+//   "version": "1.0.0",
+//   "author": "Design Team",
+//   "category": "professional",
+//   "tags": ["modern", "minimal"],
+//   "sections": ["education", "experience", "skills"],
+//   "previewImage": "url-to-preview",
+//   "compatibility": ["pdf", "docx"],
+//   "customFields": {
+//     "maxSections": 5,
+//     "colorSchemes": ["blue", "gray", "green"]
+//   }
+// }

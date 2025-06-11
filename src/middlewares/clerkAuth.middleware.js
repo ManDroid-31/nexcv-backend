@@ -1,6 +1,11 @@
-import { requireAuth } from '@clerk/express';
+//in use for middleware auth check
 
-export const clerkMiddleware = requireAuth({
-  jwtKey: process.env.CLERK_JWT_PUBLIC_KEY || 'dvb_2yAreFOft1XfjMeclqLYdMi3FyH', // Optional if using API keys
-  authorizedParties: ['http://localhost:3000'],   // Optional
+import { clerkMiddleware } from '@clerk/express';
+import dotenv from "dotenv";
+
+dotenv.config();
+
+export const authMiddleware = clerkMiddleware({
+  publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+  secretKey: process.env.CLERK_SECRET_KEY,
 }); 

@@ -19,15 +19,16 @@ AI-powered resume builder backend — modular, clean Express.js setup using Mong
 ## 🚧 Development To-Do
 
 - [x] Setup Express server + folder structure
-- [ ] MongoDB + Mongoose config
-- [ ] Resume CRUD API
+- [x] MongoDB + Mongoose config
+- [x] Resume CRUD API endpoints created
+- [ ] Resume CRUD API endpoints tested 
 - [ ] Zod validation
-- [ ] JWT Auth / Clerk Auth
+- [x] JWT Auth / Clerk Auth
 - [ ] AI suggestions (OpenAI)
 - [ ] Browserless PDF generation
 - [ ] Stripe integration
 - [ ] Credit System
-- [ ] CI/CD + Lint/Test on push
+- [x] CI/CD + Lint/Test on push
 
 ---
 
