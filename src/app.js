@@ -2,9 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import process from "process";
-import { authMiddleware } from "./middlewares/clerkAuth.middleware.js";
 import resumeRoutes from "./routes/resumes.routes.js";
 import protectedRoute from "./routes/protected.js";
+import aiRoutes from "./routes/ai.routes.js";
 
 dotenv.config();
 
@@ -14,7 +14,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(authMiddleware); // Apply Clerk middleware globally
+
+
+// app.use(authMiddleware); // Apply Clerk middleware globally
 
 // Public routes
 app.get("/", (req, res) => {
@@ -27,6 +29,7 @@ app.get("/health", (req, res) => {
 
 // Protected routes
 app.use("/api/resumes", resumeRoutes);
+app.use("/api/ai", aiRoutes);
 
 //custom route to serve as clerk backend working
 app.use("/api/protected", protectedRoute);

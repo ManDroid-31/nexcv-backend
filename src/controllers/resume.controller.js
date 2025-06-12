@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
+
+//the schema is validated using node_modules/.prisma/client which we used prisma generate for 
 const prisma = new PrismaClient();
 
 export const createResume = async (req, res) => {
@@ -45,7 +47,6 @@ export const getResumeById = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.auth.userId;
-
         const resume = await prisma.resume.findFirst({
             where: {
                 id,

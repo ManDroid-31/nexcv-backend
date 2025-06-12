@@ -30,7 +30,7 @@ jobs:
             - name: 🔍 Lint code
               run: npm run lint
 
-            - name: formatting code
+            - name: ➰ Formatting code
               run: npm run format
 
             - name: 💅 Check Prettier formatting

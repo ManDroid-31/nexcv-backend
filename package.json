@@ -4,6 +4,7 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
+        "seed": "node prisma/seed.js",
         "lint": "eslint . --ext .js",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
@@ -18,6 +19,7 @@
         "@clerk/backend": "^2.0.0",
         "@clerk/clerk-sdk-node": "^4.13.23",
         "@clerk/express": "^1.6.0",
+        "@faker-js/faker": "^9.8.0",
         "@prisma/client": "^6.9.0",
         "bcrypt": "^6.0.0",
         "cors": "^2.8.5",

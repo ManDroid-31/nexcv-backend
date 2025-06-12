@@ -1,5 +1,5 @@
 import express from "express";
-import { clerkMiddleware } from "../middlewares/clerkAuth.middleware.js";
+// import { authMiddleware as  clerkMiddleware } from "../middlewares/clerkAuth.middleware.js";
 import {
     createResume,
     getAllResumes,
@@ -10,9 +10,12 @@ import {
 
 const router = express.Router();
 
+// IMPORTANT AUTH DISABLED FOR NOW
 // Apply Clerk middleware to all routes
-router.use(clerkMiddleware);
+// router.use(clerkMiddleware);
 
+
+//endpoints are /api/resumes/
 // Resume routes
 router.post("/", createResume);
 router.get("/", getAllResumes);
