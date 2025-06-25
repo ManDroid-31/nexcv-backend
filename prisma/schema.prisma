@@ -74,6 +74,17 @@ model Template {
   updatedAt   DateTime @updatedAt
 }
 
+// for AI context
+model AIInteraction {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String
+  resumeId   String
+  section    String
+  prompt     String
+  response   String
+  createdAt  DateTime @default(now())
+}
+
 
 //example metadata
 // {

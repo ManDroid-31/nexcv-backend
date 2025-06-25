@@ -5,6 +5,7 @@ import process from "process";
 import resumeRoutes from "./routes/resumes.routes.js";
 import protectedRoute from "./routes/protected.js";
 import aiRoutes from "./routes/ai.routes.js";
+import { getPublicResume } from "./controllers/resume.controller.js";
 
 dotenv.config();
 
@@ -26,6 +27,9 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
     res.send("NexCV Backend is healthy!");
 });
+
+// Public resume route (no authentication required)
+app.get("/api/public/:slug", getPublicResume);
 
 // Protected routes
 app.use("/api/resumes", resumeRoutes);
