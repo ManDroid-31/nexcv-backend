@@ -26,7 +26,7 @@ async function getCachedConversationHistory(userId, conversationId, limit = 10) 
     const logs = await prisma.aIInteraction.findMany({
         where: { userId, section: "chat" },
         orderBy: { createdAt: "desc" },
-        take: limit
+        take: limit,
     });
 
     await cacheService.cacheConversationHistory(userId, conversationId, logs);
@@ -77,14 +77,18 @@ function filterAIResponse(response) {
         .trim();
 
     if (filtered.includes(".")) {
-        const sentences = filtered.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        const sentences = filtered.split(/[.!?]+/).filter((s) => s.trim().length > 10);
         if (sentences.length > 0) {
             filtered = sentences.slice(0, 3).join(". ") + ".";
         }
     }
 
     if (filtered.includes(",")) {
-        filtered = filtered.split(",").map(skill => skill.trim()).filter(skill => skill.length > 0).join(", ");
+        filtered = filtered
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter((skill) => skill.length > 0)
+            .join(", ");
     }
 
     return filtered;
@@ -93,31 +97,37 @@ function filterAIResponse(response) {
 // Helper function to extract JSON data from AI responses
 function extractResumeDataFromResponse(response) {
     if (!response) return null;
-    
+
     try {
         // Look for JSON code blocks in the response
         const jsonMatch = response.match(/```json\s*(\{[\s\S]*?\})\s*```/);
         if (jsonMatch) {
             const jsonString = jsonMatch[1];
             const parsedData = JSON.parse(jsonString);
-            
+
             // Validate that it looks like resume data
-            if (parsedData && (parsedData.data || parsedData.personalInfo || parsedData.experience)) {
+            if (
+                parsedData &&
+                (parsedData.data || parsedData.personalInfo || parsedData.experience)
+            ) {
                 console.log("📄 Extracted resume data from AI response");
                 return parsedData;
             }
         }
-        
+
         // Also try to find JSON without code blocks
         const jsonWithoutBlocks = response.match(/\{[\s\S]*\}/);
         if (jsonWithoutBlocks) {
             const parsedData = JSON.parse(jsonWithoutBlocks[0]);
-            if (parsedData && (parsedData.data || parsedData.personalInfo || parsedData.experience)) {
+            if (
+                parsedData &&
+                (parsedData.data || parsedData.personalInfo || parsedData.experience)
+            ) {
                 console.log("📄 Extracted resume data from AI response (no code blocks)");
                 return parsedData;
             }
         }
-        
+
         return null;
     } catch (error) {
         console.log("❌ Failed to extract JSON from AI response:", error.message);
@@ -138,7 +148,10 @@ ${jobDescription}
 KEY SKILLS:`;
 
     const keywordsResult = await generateAIResponse(keywordPrompt);
-    return filterAIResponse(keywordsResult).split(",").map(k => k.trim()).filter(k => k.length > 0);
+    return filterAIResponse(keywordsResult)
+        .split(",")
+        .map((k) => k.trim())
+        .filter((k) => k.length > 0);
 }
 
 // Tailor resume for specific job
@@ -159,8 +172,8 @@ ENHANCED SUMMARY AND EXPERIENCE:`;
         summary: tailoredData[0] || resume.summary,
         experience: tailoredData.slice(1).map((exp, i) => ({
             ...resume.experience[i],
-            description: exp.split("\n").filter(b => b.trim().length > 10)
-        }))
+            description: exp.split("\n").filter((b) => b.trim().length > 10),
+        })),
     };
 }
 
@@ -202,7 +215,7 @@ export const enhanceResume = async (req, res) => {
             optimizedResume = {
                 ...optimizedResume,
                 summary: tailoredData.summary,
-                experience: tailoredData.experience
+                experience: tailoredData.experience,
             };
         }
 
@@ -230,7 +243,10 @@ ${JSON.stringify(optimizedResume, null, 2)}
 SKILLS LIST:`;
 
         const skillsResult = await generateAIResponse(skillsPrompt);
-        const skills = filterAIResponse(skillsResult).split(",").map(skill => skill.trim()).filter(skill => skill.length > 0);
+        const skills = filterAIResponse(skillsResult)
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter((skill) => skill.length > 0);
 
         // Enhanced experience
         let enhancedExperience = [];
@@ -247,7 +263,10 @@ ENHANCED BULLET POINTS:
 - `;
 
                 const expResult = await generateAIResponse(experiencePrompt);
-                const expBullets = filterAIResponse(expResult).split("\n").filter(b => b.trim().length > 10).slice(0, 4);
+                const expBullets = filterAIResponse(expResult)
+                    .split("\n")
+                    .filter((b) => b.trim().length > 10)
+                    .slice(0, 4);
                 enhancedExperience.push({ ...exp, description: expBullets });
             }
         }
@@ -266,7 +285,10 @@ ${JSON.stringify(section, null, 2)}
 ENHANCED CONTENT:`;
 
                     const customResult = await generateAIResponse(customPrompt);
-                    enhancedCustomSections.push({ ...section, value: filterAIResponse(customResult) });
+                    enhancedCustomSections.push({
+                        ...section,
+                        value: filterAIResponse(customResult),
+                    });
                 } else if (section.type === "array-object" && section.value?.length > 0) {
                     const enhancedItems = [];
                     for (const item of section.value) {
@@ -299,8 +321,8 @@ ENHANCED ITEM:`;
                 ...optimizedResume.data,
                 summary: filteredSummary,
                 skills,
-                experience: enhancedExperience
-            }
+                experience: enhancedExperience,
+            },
         };
 
         await cacheService.cacheEnhancedResume(resumeHash, enhanced);
@@ -311,7 +333,7 @@ ENHANCED ITEM:`;
             cached: false,
             source: "ai_generated",
             jobTailoring: !!jobDescription,
-            atsOptimized: true
+            atsOptimized: true,
         });
     } catch (error) {
         console.error("Error enhancing resume:", error);
@@ -328,9 +350,19 @@ export const chatWithAI = async (req, res) => {
         if (!message) return res.status(400).json({ error: "Message required" });
 
         const history = await getCachedConversationHistory(userId, conversationId);
-        const contextPrompt = resume ? `Current Resume Context:\n${JSON.stringify(resume, null, 2)}` : "No resume provided";
-        const jobContext = jobDescription ? `Job Description:\n${jobDescription}` : "No job description provided";
-        const historyContext = history.length > 0 ? `Recent Conversation History:\n${history.slice(0, 5).map(h => `User: ${h.prompt}\nAssistant: ${h.response}`).join('\n\n')}` : "No history";
+        const contextPrompt = resume
+            ? `Current Resume Context:\n${JSON.stringify(resume, null, 2)}`
+            : "No resume provided";
+        const jobContext = jobDescription
+            ? `Job Description:\n${jobDescription}`
+            : "No job description provided";
+        const historyContext =
+            history.length > 0
+                ? `Recent Conversation History:\n${history
+                      .slice(0, 5)
+                      .map((h) => `User: ${h.prompt}\nAssistant: ${h.response}`)
+                      .join("\n\n")}`
+                : "No history";
 
         const aiResponse = await generateAIResponse(`
 ${contextPrompt}
@@ -364,9 +396,9 @@ Assistant:`);
                 hasJobDescription: !!jobDescription,
                 historyLength: history.length,
                 cached: false,
-                source: "ai_generated"
+                source: "ai_generated",
             },
-            ...(extractedData && { updatedResume: extractedData })
+            ...(extractedData && { updatedResume: extractedData }),
         };
 
         res.json(responseData);
@@ -395,8 +427,8 @@ export const getConversationHistory = async (req, res) => {
             conversationId,
             cacheInfo: {
                 redisConnected: cacheService.isConnected,
-                cacheStats: await cacheService.getCacheStats()
-            }
+                cacheStats: await cacheService.getCacheStats(),
+            },
         });
     } catch (error) {
         console.error("Error fetching history:", error);
@@ -408,12 +440,14 @@ export const getConversationHistory = async (req, res) => {
 export const clearCache = async (req, res) => {
     try {
         const { pattern } = req.query;
-        const result = pattern ? await cacheService.clearCachePattern(pattern) : await cacheService.clearAllCache();
+        const result = pattern
+            ? await cacheService.clearCachePattern(pattern)
+            : await cacheService.clearAllCache();
 
         res.json({
             message: "Cache cleared",
             pattern: pattern || "all",
-            success: result
+            success: result,
         });
     } catch (error) {
         console.error("Error clearing cache:", error);
@@ -442,11 +476,18 @@ export const testNormalization = async (req, res) => {
         res.json({
             test: testResult,
             examples: {
-                "What are the best skills for my resume?": cacheService.testNormalization("What are the best skills for my resume?"),
-                "Suggest technical skills for my resume": cacheService.testNormalization("Suggest technical skills for my resume"),
-                "Help me write a summary": cacheService.testNormalization("Help me write a summary"),
-                "Can you create a professional summary?": cacheService.testNormalization("Can you create a professional summary?")
-            }
+                "What are the best skills for my resume?": cacheService.testNormalization(
+                    "What are the best skills for my resume?"
+                ),
+                "Suggest technical skills for my resume": cacheService.testNormalization(
+                    "Suggest technical skills for my resume"
+                ),
+                "Help me write a summary":
+                    cacheService.testNormalization("Help me write a summary"),
+                "Can you create a professional summary?": cacheService.testNormalization(
+                    "Can you create a professional summary?"
+                ),
+            },
         });
     } catch (error) {
         console.error("Error testing normalization:", error);

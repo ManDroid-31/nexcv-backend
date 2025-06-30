@@ -25,6 +25,11 @@ router.put("/:id", clerkHeaderAuth, updateResume);
 router.delete("/:id", clerkHeaderAuth, deleteResume);
 
 // Fetch LinkedIn data and format as resume
-router.post('/fetch-linkedin', clerkHeaderAuth, requireCredits(7, 'linkedin-fetch'), fetchLinkedInResume);
+router.post(
+    "/fetch-linkedin",
+    clerkHeaderAuth,
+    requireCredits(7, "linkedin-fetch"),
+    fetchLinkedInResume
+);
 
 export default router;

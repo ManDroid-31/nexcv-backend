@@ -129,9 +129,12 @@ try {
 } catch (error) {
     console.error("❌ JSON parsing error:", error.message);
     console.error("Error at position:", error.message.match(/position (\d+)/)?.[1]);
-    
+
     // Show the character at the error position
     const position = parseInt(error.message.match(/position (\d+)/)?.[1]) || 0;
     console.error("Character at position", position, ":", JSON.stringify(testJSON[position]));
-    console.error("Context around position:", testJSON.substring(Math.max(0, position - 10), position + 10));
-} 
+    console.error(
+        "Context around position:",
+        testJSON.substring(Math.max(0, position - 10), position + 10)
+    );
+}

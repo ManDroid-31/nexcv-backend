@@ -5,6 +5,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 ## Features
 
 ### Core Features
+
 - User authentication with Clerk
 - Resume CRUD operations with MongoDB and Prisma ORM
 - Credit system for premium features
@@ -14,6 +15,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 - **Public resume sharing via slugs**
 
 ### Authentication & Security
+
 - Secure user authentication via Clerk
 - JWT token management
 - Protected API routes
@@ -21,6 +23,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 - **Rate limiting for AI endpoints**
 
 ### Resume Management
+
 - Create, read, update, and delete resumes
 - Multiple resume templates support
 - Resume visibility control (public/private)
@@ -29,6 +32,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 - PDF export functionality (planned)
 
 ### AI Features
+
 - **Generate professional summaries**
 - **Improve work experience descriptions**
 - **Suggest relevant skills**
@@ -38,6 +42,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 - **Rate limiting and abuse protection**
 
 ### Credit System
+
 - Credit balance tracking
 - Transaction history
 - Premium feature access control
@@ -46,6 +51,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 ## Tech Stack
 
 ### Backend
+
 - Node.js with Express.js
 - TypeScript support
 - MongoDB with Prisma ORM
@@ -57,6 +63,7 @@ Backend service for NexCV - A modern resume builder application with AI-powered 
 - Redis + BullMQ for queue management (planned)
 
 ### Development Tools
+
 - ESLint for code linting
 - Prettier for code formatting
 - GitHub Actions for CI/CD
@@ -136,6 +143,7 @@ npm run dev
 ### Protected Routes
 
 #### Resume Management
+
 - `POST /api/resumes` - Create new resume
 - `GET /api/resumes` - List all user resumes
 - `GET /api/resumes/:id` - Get specific resume
@@ -143,17 +151,20 @@ npm run dev
 - `DELETE /api/resumes/:id` - Delete resume
 
 #### AI Features
+
 - `POST /api/ai/generate` - **Generate AI content for resume sections**
 - `POST /api/ai/enhance-resume` - Enhance entire resume
 - `POST /api/ai/scrape-profile` - Scrape profile from URL
 - `POST /api/ai/auto-fill` - Auto-fill resume fields
 
 #### Credit System
+
 - `GET /api/credits/balance` - Get user's credit balance
 - `GET /api/credits/transactions` - Get credit transaction history
 - `POST /api/credits/purchase` - Purchase credits (planned)
 
 #### Templates
+
 - `GET /api/templates` - List available templates
 - `GET /api/templates/:id` - Get template details
 
@@ -240,15 +251,17 @@ The resume data is stored as a flexible JSON object in the `data` field. Here's 
 Generate AI-powered content for specific resume sections.
 
 **Request Body:**
+
 ```json
 {
-  "section": "summary",
-  "input": "I worked at Google as a software engineer...",
-  "resumeId": "507f1f77bcf86cd799439011"
+    "section": "summary",
+    "input": "I worked at Google as a software engineer...",
+    "resumeId": "507f1f77bcf86cd799439011"
 }
 ```
 
 **Supported Sections:**
+
 - `summary` - Professional summary
 - `experience` - Work experience descriptions
 - `education` - Education section content
@@ -257,25 +270,29 @@ Generate AI-powered content for specific resume sections.
 - `personalInfo` - Personal information improvements
 
 **Response:**
+
 ```json
 {
-  "result": "Experienced software engineer with a proven track record at Google..."
+    "result": "Experienced software engineer with a proven track record at Google..."
 }
 ```
 
 **Rate Limits:**
+
 - 10 requests per 15 minutes per IP address
 - Automatic fallback to mock AI if OpenAI is unavailable
 
 ## Data Models
 
 ### User
+
 - Basic user information
 - Clerk user ID integration
 - Credit balance tracking
 - Resume relationships
 
 ### Resume
+
 - Title and slug
 - Template reference
 - **Flexible JSON data storage**
@@ -283,6 +300,7 @@ Generate AI-powered content for specific resume sections.
 - User relationship
 
 ### CreditTransaction
+
 - Transaction type (earn/spend)
 - Amount
 - Reason
@@ -290,6 +308,7 @@ Generate AI-powered content for specific resume sections.
 - User relationship
 
 ### Template
+
 - Template metadata
 - Version information
 - Compatibility details
@@ -298,17 +317,20 @@ Generate AI-powered content for specific resume sections.
 ## Development
 
 ### Available Scripts
+
 - `npm run dev` - Start development server
 - `npm run lint` - Run ESLint
 - `npm run format` - Format code with Prettier
 - `npm run seed` - Seed database with sample data
 
 ### Code Style
+
 - ESLint configuration for code quality
 - Prettier for consistent formatting
 - TypeScript for type safety
 
 ### Environment Variables
+
 - `DATABASE_URL` - MongoDB connection string
 - `CLERK_SECRET_KEY` - Clerk authentication secret
 - `CLERK_PUBLISHABLE_KEY` - Clerk public key
@@ -317,6 +339,7 @@ Generate AI-powered content for specific resume sections.
 ## Future Enhancements
 
 ### Planned Features
+
 - **AI-powered resume suggestions** ✅ (Implemented)
 - PDF generation with Browserless
 - Stripe integration for payments

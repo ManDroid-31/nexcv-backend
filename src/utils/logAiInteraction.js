@@ -11,21 +11,21 @@ const prisma = new PrismaClient();
  * @param {string} params.response - The AI's response
  */
 export async function logAIInteraction({ userId, resumeId, section, prompt, response }) {
-  try {
-    await prisma.aIInteraction.create({
-      data: {
-        userId,
-        resumeId,
-        section,
-        prompt,
-        response,
-      },
-    });
-    console.log(`✅ AI interaction logged for user ${userId}, section: ${section}`);
-  } catch (error) {
-    console.error("❌ Failed to log AI interaction:", error.message);
-    // Don't throw error to avoid breaking the main flow
-  }
+    try {
+        await prisma.aIInteraction.create({
+            data: {
+                userId,
+                resumeId,
+                section,
+                prompt,
+                response,
+            },
+        });
+        console.log(`✅ AI interaction logged for user ${userId}, section: ${section}`);
+    } catch (error) {
+        console.error("❌ Failed to log AI interaction:", error.message);
+        // Don't throw error to avoid breaking the main flow
+    }
 }
 
 /**
@@ -35,17 +35,17 @@ export async function logAIInteraction({ userId, resumeId, section, prompt, resp
  * @returns {Array} Array of AI interaction logs
  */
 export async function getAIInteractionLogs(userId, limit = 50) {
-  try {
-    const logs = await prisma.aIInteraction.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
-    return logs;
-  } catch (error) {
-    console.error("❌ Failed to fetch AI interaction logs:", error.message);
-    throw error;
-  }
+    try {
+        const logs = await prisma.aIInteraction.findMany({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
+        return logs;
+    } catch (error) {
+        console.error("❌ Failed to fetch AI interaction logs:", error.message);
+        throw error;
+    }
 }
 
 /**
@@ -55,15 +55,15 @@ export async function getAIInteractionLogs(userId, limit = 50) {
  * @returns {Array} Array of AI interaction logs
  */
 export async function getResumeAIInteractionLogs(resumeId, limit = 50) {
-  try {
-    const logs = await prisma.aIInteraction.findMany({
-      where: { resumeId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
-    return logs;
-  } catch (error) {
-    console.error("❌ Failed to fetch resume AI interaction logs:", error.message);
-    throw error;
-  }
-} 
+    try {
+        const logs = await prisma.aIInteraction.findMany({
+            where: { resumeId },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
+        return logs;
+    } catch (error) {
+        console.error("❌ Failed to fetch resume AI interaction logs:", error.message);
+        throw error;
+    }
+}
