@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 export const checkCredits = async (req, res, next) => {
     try {
-        const userId = req.auth.userId;
+        const userId = req.auth().userId;
         const user = await prisma.user.findUnique({ where: { id: userId } });
 
         if (!user) {

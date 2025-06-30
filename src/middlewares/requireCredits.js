@@ -1,35 +1,52 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 /**
  * Middleware factory to require credits for an action.
  * Deducts credits and logs transaction if user has enough.
- * @param {number} cost - Number of credits required
- * @param {'linkedin-fetch'|'ai-enhance'} type - Type of credit usage
+ * @param cost Number of credits required
+ * @param type Type of credit usage
  */
-function requireCredits(cost, type) {
+const requireCredits = (cost, type) => {
   return async (req, res, next) => {
     try {
-      const userId = req.auth && req.auth.userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized: No user ID' });
+      const clerkUserId = req.body?.userId;
+
+      if (!clerkUserId) {
+        return res.status(401).json({ error: 'Unauthorized: No Clerk user ID lol from backend' });
       }
-      const user = await prisma.user.findUnique({ where: { id: userId } });
+
+      // Find user by clerkUserId
+      let user = await prisma.user.findUnique({ where: { clerkUserId } });
+
       if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+        // Auto-create user if not found
+        user = await prisma.user.create({
+          data: {
+            clerkUserId,
+            email: "user@example.com", // Optionally get from Clerk
+            name: "User"
+          }
+        });
       }
+
       if (user.creditBalance < cost) {
         return res.status(403).json({ error: 'Not enough credits' });
       }
+
       await prisma.$transaction([
         prisma.user.update({
-          where: { id: userId },
-          data: { creditBalance: { decrement: cost } },
+          where: { clerkUserId },
+          data: {
+            creditBalance: {
+              decrement: cost,
+            },
+          },
         }),
         prisma.creditTransaction.create({
           data: {
-            userId,
+            userId: user.id,
             type,
             amount: -cost,
             reason: type,
@@ -37,13 +54,13 @@ function requireCredits(cost, type) {
           },
         }),
       ]);
+
       next();
-    } catch (error) {
-      console.error('Error in requireCredits middleware:', error);
-      res.status(500).json({ error: 'Failed to process credits' });
+    } catch (err) {
+      console.error('Error in requireCredits middleware:', err);
+      return res.status(500).json({ error: 'Failed to process credits' });
     }
   };
-}
+};
 
-module.exports = requireCredits;
-module.exports.requireCredits = requireCredits; 
+export default requireCredits;

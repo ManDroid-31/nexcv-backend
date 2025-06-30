@@ -78,36 +78,6 @@ class CacheService {
       return crypto.createHash('sha256').update(data).digest('hex');
     }
 
-    // Generate multiple hash variations for better matching
-    // meaning if you say "update the resume" and "update the given resume" will give cached results 
-    generateConversationHashVariations(userId, conversationId, message) {
-      const hashes = [];
-      
-      // Original message hash
-      hashes.push({
-        type: 'exact',
-        hash: crypto.createHash('sha256').update(`${userId}_${conversationId}_${message}`).digest('hex')
-      });
-      
-      // Normalized message hash
-      const normalizedMessage = this.normalizePrompt(message);
-      hashes.push({
-        type: 'normalized',
-        hash: crypto.createHash('sha256').update(`${userId}_${conversationId}_${normalizedMessage}`).digest('hex')
-      });
-      
-      // Keywords-only hash (first 3 words)
-      const keywords = normalizedMessage.split(' ').slice(0, 3).join(' ');
-      if (keywords) {
-        hashes.push({
-          type: 'keywords',
-          hash: crypto.createHash('sha256').update(`${userId}_${conversationId}_${keywords}`).digest('hex')
-        });
-      }
-      
-      return hashes;
-    }
-
     // Cache AI response with TTL
     async cacheAIResponse(key, data, ttl = 3600) {
       if (!this.isConnected || !this.client) return false;
@@ -164,46 +134,20 @@ class CacheService {
       return await this.getCachedResponse(key);
     }
 
-    // Cache AI chat response with multiple variations
-    async cacheChatResponse(conversationHash, response, ttl = 1800) {
+    // Cache AI chat response (single hash only)
+    async cacheChatResponse(userId, conversationId, message, response, ttl = 1800) {
+      if (!this.isConnected || !this.client) return false;
+      const conversationHash = this.generateConversationHash(userId, conversationId, message);
       const key = `chat:${conversationHash}`;
       return await this.cacheAIResponse(key, response, ttl);
     }
 
-    // Get cached chat response with fuzzy matching
+    // Get cached chat response (single hash only)
     async getCachedChatResponse(userId, conversationId, message) {
       if (!this.isConnected || !this.client) return null;
-      
-      const hashVariations = this.generateConversationHashVariations(userId, conversationId, message);
-      
-      // Try exact match first
-      for (const hashData of hashVariations) {
-        const key = `chat:${hashData.hash}`;
-        const cached = await this.getCachedResponse(key);
-        if (cached) {
-          console.log(`📦 Cache hit (${hashData.type}): ${key}`);
-          return {
-            ...cached,
-            matchType: hashData.type
-          };
-        }
-      }
-      
-      return null;
-    }
-
-    // Cache chat response with all variations
-    async cacheChatResponseWithVariations(userId, conversationId, message, response, ttl = 1800) {
-      const hashVariations = this.generateConversationHashVariations(userId, conversationId, message);
-      
-      // Cache with all variations for better matching
-      const cachePromises = hashVariations.map(hashData => {
-        const key = `chat:${hashData.hash}`;
-        return this.cacheAIResponse(key, response, ttl);
-      });
-      
-      await Promise.all(cachePromises);
-      console.log(`📦 Cached chat response with ${hashVariations.length} variations`);
+      const conversationHash = this.generateConversationHash(userId, conversationId, message);
+      const key = `chat:${conversationHash}`;
+      return await this.getCachedResponse(key);
     }
 
     // Get cache statistics

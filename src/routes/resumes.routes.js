@@ -1,5 +1,5 @@
 import express from "express";
-// import { authMiddleware as  clerkMiddleware } from "../middlewares/clerkAuth.middleware.js";
+import clerkHeaderAuth from "../middlewares/clerkHeaderAuth.middleware.js";
 import {
     createResume,
     getAllResumes,
@@ -9,26 +9,22 @@ import {
     fetchLinkedInResume,
 } from "../controllers/resume.controller.js";
 import { resumeRateLimiter } from "../middlewares/rateLimit.middleware.js";
-const { requireCredits } = require("../middlewares/requireCredits");
-
+import requireCredits from "../middlewares/requireCredits.js";
 const router = express.Router();
-
-// IMPORTANT AUTH DISABLED FOR NOW
-// TODO: When integrating Clerk, uncomment the next line to enable authentication
-// router.use(clerkMiddleware);
 
 // Apply rate limiting to resume operations
 router.use(resumeRateLimiter);
 
 //endpoints are /api/resumes/
 // Resume routes
-router.post("/", createResume);
-router.get("/", getAllResumes);
+router.post("/", clerkHeaderAuth, createResume);
+router.get("/", clerkHeaderAuth, getAllResumes);
+// Public route: no auth
 router.get("/:id", getResumeById);
-router.put("/:id", updateResume);
-router.delete("/:id", deleteResume);
+router.put("/:id", clerkHeaderAuth, updateResume);
+router.delete("/:id", clerkHeaderAuth, deleteResume);
 
 // Fetch LinkedIn data and format as resume
-router.post('/fetch-linkedin', requireCredits(7, 'linkedin-fetch'), fetchLinkedInResume);
+router.post('/fetch-linkedin', clerkHeaderAuth, requireCredits(7, 'linkedin-fetch'), fetchLinkedInResume);
 
 export default router;

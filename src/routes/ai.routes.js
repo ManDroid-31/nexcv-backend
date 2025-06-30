@@ -1,5 +1,6 @@
 import express from 'express';
 // import { requireAuth } from '@clerk/express';
+import { authMiddleware as  clerkMiddleware } from "../middlewares/clerkAuth.middleware.js";
 import { 
     chatWithAI,
     getConversationHistory,
@@ -10,13 +11,13 @@ import {
 } from '../controllers/ai.controller.js';
 import { aiRateLimiter } from '../middlewares/rateLimit.middleware.js';
 import { getAIInteractionLogs, getResumeAIInteractionLogs } from '../utils/logAiInteraction.js';
-const { requireCredits } = require('../middlewares/requireCredits');
+import requireCredits from '../middlewares/requireCredits.js';
 
 const router = express.Router();
 
 //IMPORTANT AUTH DISABLED FOR NOW
 // TODO: When integrating Clerk, uncomment the next line to enable authentication
-// router.use(requireAuth);
+router.use(clerkMiddleware);
 
 // Apply rate limiting to all AI routes
 router.use(aiRateLimiter);

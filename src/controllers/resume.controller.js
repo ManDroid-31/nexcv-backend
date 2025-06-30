@@ -9,32 +9,42 @@ dotenv.config();
 //the schema is validated using node_modules/.prisma/client which we used prisma generate for 
 const prisma = new PrismaClient();
 
-// Default user ID for development when Clerk is not set up
-const DEFAULT_USER_ID = "507f1f77bcf86cd799439011";
-
 // Helper function to get user ID (with fallback to default)
-const getUserId = (req) => {
-    // TODO: When integrating Clerk, remove fallback and always use req.auth.userId
+const getUserId = (req, allowUnauthenticated = false) => {
+    // Use Clerk user ID from header-based auth
     if (req.auth && req.auth.userId) {
         return req.auth.userId;
     }
-    // TODO: Remove this fallback when Clerk is integrated
-    console.log("⚠️  No Clerk auth found, using default user ID for development");
-    return DEFAULT_USER_ID;
+    if (allowUnauthenticated) return null;
+    throw new Error("No authenticated user found");
 };
 
+
+
 // Ensure Redis connection
-cacheService.connect();
+// cacheService.connect();
 
 export const createResume = async (req, res) => {
     try {
         const { title, data, template, visibility = "private" } = req.body;
-        const userId = getUserId(req);
+        const clerkUserId = getUserId(req);
 
-        // Generate slug from title
+        // First, find or create the user by Clerk user ID
+        let user = await prisma.user.findUnique({
+            where: { clerkUserId }
+        });
+
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    clerkUserId,
+                    email: "user@example.com",
+                    name: "User"
+                }
+            });
+        }
+
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-        // Check if slug already exists
         const existing = await prisma.resume.findUnique({ where: { slug } });
         if (existing) {
             return res.status(400).json({ error: 'A resume with this title/slug already exists. Please use a different title.' });
@@ -47,19 +57,19 @@ export const createResume = async (req, res) => {
                 data,
                 template,
                 visibility,
-                userId,
+                userId: user.id,
             },
         });
 
-        // Cache the new resume and invalidate user's resume list
         if (cacheService.isConnected) {
             await cacheService.cacheAIResponse(`resume:${resume.id}`, resume, 600);
-            await cacheService.clearCachePattern(`resumes:user:${userId}`);
+            await cacheService.clearCachePattern(`resumes:user:${clerkUserId}`);
             if (resume.visibility === 'public') {
                 await cacheService.cacheAIResponse(`resume:public:${resume.slug}`, resume, 600);
             }
         }
 
+        console.log(`[RESUME] Resume saved successfully for user ${clerkUserId} (resumeId: ${resume.id})`);
         res.status(201).json(resume);
     } catch (error) {
         if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
@@ -72,20 +82,31 @@ export const createResume = async (req, res) => {
 
 export const getAllResumes = async (req, res) => {
     try {
-        const userId = getUserId(req);
+        const clerkUserId = getUserId(req);
+        let user = await prisma.user.findUnique({ where: { clerkUserId } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    clerkUserId,
+                    email: "user@example.com",
+                    name: "User"
+                }
+            });
+        }
         let resumes = null;
         if (cacheService.isConnected) {
-            resumes = await cacheService.getCachedResponse(`resumes:user:${userId}`);
+            resumes = await cacheService.getCachedResponse(`resumes:user:${clerkUserId}`);
         }
         if (!resumes) {
             resumes = await prisma.resume.findMany({
-                where: { userId },
+                where: { userId: user.id },
                 orderBy: { updatedAt: "desc" },
             });
             if (cacheService.isConnected) {
-                await cacheService.cacheAIResponse(`resumes:user:${userId}`, resumes, 600);
+                await cacheService.cacheAIResponse(`resumes:user:${clerkUserId}`, resumes, 600);
             }
         }
+        console.log(`[RESUME] Loaded ${resumes.length} resumes for user ${clerkUserId}`);
         res.json(resumes);
     } catch (error) {
         console.error("Error fetching resumes:", error);
@@ -95,17 +116,29 @@ export const getAllResumes = async (req, res) => {
 
 export const getResumeById = async (req, res) => {
     try {
+        console.log("getting resume by id")
         const { id } = req.params;
-        const userId = getUserId(req);
+        // Allow unauthenticated access
+        const clerkUserId = getUserId(req, true);
+        let user = null;
+        if (clerkUserId) {
+            user = await prisma.user.findUnique({ where: { clerkUserId } });
+            if (!user) {
+                user = await prisma.user.create({
+                    data: {
+                        clerkUserId,
+                        email: "user@example.com",
+                        name: "User"
+                    }
+                });
+            }
+        }
         let resume = null;
         if (cacheService.isConnected) {
             resume = await cacheService.getCachedResponse(`resume:${id}`);
         }
         if (!resume) {
-            // First, find the resume by ID (without user restriction)
-            resume = await prisma.resume.findFirst({
-                where: { id }
-            });
+            resume = await prisma.resume.findFirst({ where: { id } });
             if (resume && cacheService.isConnected) {
                 await cacheService.cacheAIResponse(`resume:${id}`, resume, 600);
             }
@@ -113,13 +146,16 @@ export const getResumeById = async (req, res) => {
         if (!resume) {
             return res.status(404).json({ error: "Resume not found" });
         }
-        // Check access control
-        if (resume.visibility === "private" && resume.userId !== userId) {
-            return res.status(403).json({ 
-                error: "Access denied", 
-                message: "This resume is private and you don't have permission to view it" 
-            });
+        // If resume is private, only allow owner to access
+        if (resume.visibility === "private") {
+            if (!user || resume.userId !== user.id) {
+                return res.status(403).json({ 
+                    error: "Access denied", 
+                    message: "This resume is private and you don't have permission to view it" 
+                });
+            }
         }
+        console.log(`[RESUME] Loaded resume ${id} for user ${clerkUserId || 'public'}`);
         res.json(resume);
     } catch (error) {
         console.error("Error fetching resume:", error);
@@ -164,32 +200,37 @@ export const getPublicResume = async (req, res) => {
 
 export const updateResume = async (req, res) => {
     try {
+        console.log("trying ti update the resume")
         const { id } = req.params;
-        const userId = getUserId(req);
+        const clerkUserId = getUserId(req);
+        let user = await prisma.user.findUnique({ where: { clerkUserId } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    clerkUserId,
+                    email: "user@example.com",
+                    name: "User"
+                }
+            });
+        }
         const { title, data, template, visibility } = req.body;
-        // First, find the resume by ID (without user restriction)
-        const existingResume = await prisma.resume.findFirst({
-            where: { id }
-        });
+        const existingResume = await prisma.resume.findFirst({ where: { id } });
         if (!existingResume) {
             return res.status(404).json({ error: "Resume not found" });
         }
-        // Check if user owns this resume
-        if (existingResume.userId !== userId) {
+        if (existingResume.userId !== user.id) {
             return res.status(403).json({ 
                 error: "Access denied", 
                 message: "You don't have permission to update this resume" 
             });
         }
-        // Generate new slug only if title changed
         let slug = existingResume.slug;
         if (title && title !== existingResume.title) {
             slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-            // Check if new slug already exists (excluding current resume)
             const existingWithSlug = await prisma.resume.findFirst({
                 where: {
                     slug,
-                    id: { not: id } // Exclude current resume
+                    id: { not: id }
                 }
             });
             if (existingWithSlug) {
@@ -208,16 +249,16 @@ export const updateResume = async (req, res) => {
                 visibility,
             },
         });
-        // Update cache for this resume, user's resume list, and public slug if needed
         if (cacheService.isConnected) {
             await cacheService.cacheAIResponse(`resume:${id}`, updatedResume, 600);
-            await cacheService.clearCachePattern(`resumes:user:${userId}`);
+            await cacheService.clearCachePattern(`resumes:user:${clerkUserId}`);
             if (updatedResume.visibility === 'public') {
                 await cacheService.cacheAIResponse(`resume:public:${updatedResume.slug}`, updatedResume, 600);
             } else {
                 await cacheService.clearCachePattern(`resume:public:${updatedResume.slug}`);
             }
         }
+        console.log(`[RESUME] Resume updated successfully for user ${clerkUserId} (resumeId: ${id})`);
         res.json(updatedResume);
     } catch (error) {
         if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
@@ -233,32 +274,36 @@ export const updateResume = async (req, res) => {
 export const deleteResume = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = getUserId(req);
-        // First, find the resume by ID (without user restriction)
-        const existingResume = await prisma.resume.findFirst({
-            where: { id }
-        });
+        const clerkUserId = getUserId(req);
+        let user = await prisma.user.findUnique({ where: { clerkUserId } });
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    clerkUserId,
+                    email: "user@example.com",
+                    name: "User"
+                }
+            });
+        }
+        const existingResume = await prisma.resume.findFirst({ where: { id } });
         if (!existingResume) {
             return res.status(404).json({ error: "Resume not found" });
         }
-        // Check if user owns this resume
-        if (existingResume.userId !== userId) {
+        if (existingResume.userId !== user.id) {
             return res.status(403).json({ 
                 error: "Access denied", 
                 message: "You don't have permission to delete this resume" 
             });
         }
-        await prisma.resume.delete({
-            where: { id }
-        });
-        // Invalidate cache for this resume, user's resume list, and public slug if needed
+        await prisma.resume.delete({ where: { id } });
         if (cacheService.isConnected) {
             await cacheService.clearCachePattern(`resume:${id}`);
-            await cacheService.clearCachePattern(`resumes:user:${userId}`);
+            await cacheService.clearCachePattern(`resumes:user:${clerkUserId}`);
             if (existingResume.visibility === 'public') {
                 await cacheService.clearCachePattern(`resume:public:${existingResume.slug}`);
             }
         }
+        console.log(`[RESUME] Resume deleted successfully for user ${clerkUserId} (resumeId: ${id})`);
         res.json({ success: true });
     } catch (error) {
         console.error("Error deleting resume:", error);
