@@ -38,7 +38,7 @@ jobs:
 
             - name: Start server and check health
               run: |
-                  npm run dev &
+                  npm run start &
                   sleep 5
                   curl -f http://localhost:5000/health || exit 1
               env:

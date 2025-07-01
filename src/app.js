@@ -8,6 +8,10 @@ import aiRoutes from "./routes/ai.routes.js";
 import { getPublicResume } from "./controllers/resume.controller.js";
 import cacheService from "./services/cacheService.js";
 import { authMiddleware } from "./middlewares/clerkAuth.middleware.js";
+import creditsRoutes from "./routes/credits.routes.js";
+import pino from "pino";
+
+const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
 
 dotenv.config();
 
@@ -15,8 +19,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({ origin: process.env.FRONTEND_URL || true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use(authMiddleware); // Apply Clerk middleware globally
 
@@ -26,7 +31,8 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-    res.send("NexCV Backend is healthy!");
+    logger.info("Health check OK");
+    res.json({ status: "ok" });
 });
 
 // Public resume route (no authentication required)
@@ -46,14 +52,19 @@ cacheService.connect().catch((err) => {
 });
 
 // Graceful shutdown
-const shutdown = async (signal) => {
-    console.log(`\nReceived ${signal}, shutting down...`);
-    await cacheService.disconnect();
-    process.exit(0);
+const shutdown = (signal) => {
+    logger.info(`Received ${signal}. Shutting down server...`);
+    cacheService.disconnect().then(() => {
+        logger.info("Cache disconnected");
+        process.exit(0);
+    });
 };
+
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
+app.use("/api/credits", creditsRoutes);
+
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });
