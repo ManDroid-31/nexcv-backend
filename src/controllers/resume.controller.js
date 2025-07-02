@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { validatePublicResume } from "../utils/validation.js";
 import dotenv from "dotenv";
 import cacheService from "../services/cacheService.js";
+import resumeViewMiddleware from "../middlewares/resumeView.middleware.js";
 dotenv.config();
 
 //the schema is validated using node_modules/.prisma/client which we used prisma generate for
@@ -127,23 +128,9 @@ export const getAllResumes = async (req, res) => {
 
 export const getResumeById = async (req, res) => {
     try {
-        console.log("getting resume by id");
         const { id } = req.params;
-        // Allow unauthenticated access
-        const clerkUserId = getUserId(req, true);
-        let user = null;
-        if (clerkUserId) {
-            user = await prisma.user.findUnique({ where: { clerkUserId } });
-            if (!user) {
-                user = await prisma.user.create({
-                    data: {
-                        clerkUserId,
-                        email: "user@example.com",
-                        name: "User",
-                    },
-                });
-            }
-        }
+        const resumeView = req.resumeView;
+
         let resume = null;
         if (cacheService.isConnected) {
             resume = await cacheService.getCachedResponse(`resume:${id}`);
@@ -157,17 +144,39 @@ export const getResumeById = async (req, res) => {
         if (!resume) {
             return res.status(404).json({ error: "Resume not found" });
         }
-        // If resume is private, only allow owner to access
-        if (resume.visibility === "private") {
-            if (!user || resume.userId !== user.id) {
-                return res.status(403).json({
-                    error: "Access denied",
-                    message: "This resume is private and you don't have permission to view it",
+
+        // Public view: only allow public resumes
+        if (resumeView === "publicview") {
+            if (resume.visibility !== "public") {
+                return res.status(403).json({ error: "Access denied: Not a public resume" });
+            }
+            return res.json(resume);
+        }
+
+        // Owner view: require user to be owner
+        const clerkUserId = req.auth?.userId;
+        if (resumeView === "ownerview" || !resumeView) {
+            if (!clerkUserId) {
+                return res.status(401).json({ error: "Unauthorized: No user ID" });
+            }
+            let user = await prisma.user.findUnique({ where: { clerkUserId } });
+            if (!user) {
+                user = await prisma.user.create({
+                    data: {
+                        clerkUserId,
+                        email: "user@example.com",
+                        name: "User",
+                    },
                 });
             }
+            if (resume.userId !== user.id) {
+                return res.status(403).json({ error: "Access denied: Not your resume" });
+            }
+            return res.json(resume);
         }
-        console.log(`[RESUME] Loaded resume ${id} for user ${clerkUserId || "public"}`);
-        res.json(resume);
+
+        // Fallback: deny
+        return res.status(403).json({ error: "Access denied" });
     } catch (error) {
         console.error("Error fetching resume:", error);
         res.status(500).json({ error: "Failed to fetch resume" });

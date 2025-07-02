@@ -10,6 +10,7 @@ import {
 } from "../controllers/resume.controller.js";
 import { resumeRateLimiter } from "../middlewares/rateLimit.middleware.js";
 import requireCredits from "../middlewares/requireCredits.js";
+import resumeViewMiddleware from "../middlewares/resumeView.middleware.js";
 const router = express.Router();
 
 // Apply rate limiting to resume operations
@@ -20,7 +21,15 @@ router.use(resumeRateLimiter);
 router.post("/", clerkHeaderAuth, createResume);
 router.get("/", clerkHeaderAuth, getAllResumes);
 // Public route: no auth
-router.get("/:id", getResumeById);
+router.get(
+    "/:id",
+    resumeViewMiddleware,
+    (req, res, next) => {
+        if (req.resumeView === "publicview") return next();
+        return clerkHeaderAuth(req, res, next);
+    },
+    getResumeById
+);
 router.put("/:id", clerkHeaderAuth, updateResume);
 router.delete("/:id", clerkHeaderAuth, deleteResume);
 
