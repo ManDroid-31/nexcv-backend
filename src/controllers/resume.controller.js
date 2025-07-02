@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { validatePublicResume } from "../utils/validation.js";
 import dotenv from "dotenv";
 import cacheService from "../services/cacheService.js";
-import resumeViewMiddleware from "../middlewares/resumeView.middleware.js";
+// import resumeViewMiddleware from "../middlewares/resumeView.middleware.js";
 import { users } from "@clerk/clerk-sdk-node";
 dotenv.config();
 
