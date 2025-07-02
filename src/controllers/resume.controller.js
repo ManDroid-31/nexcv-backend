@@ -5,6 +5,7 @@ import { validatePublicResume } from "../utils/validation.js";
 import dotenv from "dotenv";
 import cacheService from "../services/cacheService.js";
 import resumeViewMiddleware from "../middlewares/resumeView.middleware.js";
+import { users } from "@clerk/clerk-sdk-node";
 dotenv.config();
 
 //the schema is validated using node_modules/.prisma/client which we used prisma generate for
@@ -34,11 +35,21 @@ export const createResume = async (req, res) => {
         });
 
         if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
             user = await prisma.user.create({
                 data: {
                     clerkUserId,
-                    email: "user@example.com",
-                    name: "User",
+                    email,
+                    name,
                 },
             });
         }
@@ -97,11 +108,21 @@ export const getAllResumes = async (req, res) => {
         const clerkUserId = getUserId(req);
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
         if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
             user = await prisma.user.create({
                 data: {
                     clerkUserId,
-                    email: "user@example.com",
-                    name: "User",
+                    email,
+                    name,
                 },
             });
         }
@@ -161,11 +182,21 @@ export const getResumeById = async (req, res) => {
             }
             let user = await prisma.user.findUnique({ where: { clerkUserId } });
             if (!user) {
+                // Fetch from Clerk
+                let email = "user@example.com";
+                let name = "User";
+                try {
+                    const clerkUser = await users.getUser(clerkUserId);
+                    email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                    name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+                } catch (err) {
+                    console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+                }
                 user = await prisma.user.create({
                     data: {
                         clerkUserId,
-                        email: "user@example.com",
-                        name: "User",
+                        email,
+                        name,
                     },
                 });
             }
@@ -225,11 +256,21 @@ export const updateResume = async (req, res) => {
         const clerkUserId = getUserId(req);
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
         if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
             user = await prisma.user.create({
                 data: {
                     clerkUserId,
-                    email: "user@example.com",
-                    name: "User",
+                    email,
+                    name,
                 },
             });
         }
@@ -306,11 +347,21 @@ export const deleteResume = async (req, res) => {
         const clerkUserId = getUserId(req);
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
         if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
             user = await prisma.user.create({
                 data: {
                     clerkUserId,
-                    email: "user@example.com",
-                    name: "User",
+                    email,
+                    name,
                 },
             });
         }
