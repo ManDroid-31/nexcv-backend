@@ -26,10 +26,9 @@ const getUserId = (req, allowUnauthenticated = false) => {
 
 export const createResume = async (req, res) => {
     try {
-        const { title, data, template, visibility = "private" } = req.body;
         const clerkUserId = getUserId(req);
 
-        // First, find or create the user by Clerk user ID
+        // Find or create the user by Clerk user ID
         let user = await prisma.user.findUnique({
             where: { clerkUserId },
         });
@@ -54,26 +53,95 @@ export const createResume = async (req, res) => {
             });
         }
 
-        const slug = title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)/g, "");
-        const existing = await prisma.resume.findUnique({ where: { slug } });
-        if (existing) {
-            return res
-                .status(400)
-                .json({
-                    error: "A resume with this title/slug already exists. Please use a different title.",
-                });
+        // Mock resume data
+        const mockTitle = "Sample Resume";
+        const mockSlug = mockTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        const mockData = {
+            personalInfo: {
+                name: user.name,
+                email: user.email,
+                phone: "+1 (555) 123-4567",
+                location: "San Francisco, CA",
+                website: "https://example.com",
+                linkedin: "https://linkedin.com/in/example",
+                github: "https://github.com/example",
+            },
+            summary: "Motivated professional with a passion for technology and innovation.",
+            experience: [
+                {
+                    id: "exp-1",
+                    company: "Tech Corp",
+                    position: "Software Engineer",
+                    location: "San Francisco, CA",
+                    startDate: "2022-01",
+                    endDate: "2024-01",
+                    current: false,
+                    description: "Developed scalable web applications and collaborated with cross-functional teams.",
+                    achievements: [
+                        "Improved application performance by 30%",
+                        "Mentored junior developers",
+                    ],
+                },
+            ],
+            education: [
+                {
+                    id: "edu-1",
+                    institution: "University of Technology",
+                    degree: "Bachelor of Science",
+                    field: "Computer Science",
+                    startDate: "2018-09",
+                    endDate: "2022-05",
+                    current: false,
+                    gpa: "3.8",
+                    description: "Relevant coursework: Data Structures, Algorithms, Software Engineering",
+                },
+            ],
+            skills: ["JavaScript", "React", "Node.js", "MongoDB", "AWS", "Docker"],
+            projects: [
+                {
+                    id: "proj-1",
+                    name: "E-commerce Platform",
+                    description: "Full-stack e-commerce application with payment integration",
+                    url: "https://github.com/example/ecommerce",
+                    technologies: ["React", "Node.js", "Stripe", "MongoDB"],
+                    startDate: "2023-01",
+                    endDate: "2023-06",
+                },
+            ],
+            customSections: [],
+            sectionOrder: [
+                "personalInfo",
+                "summary",
+                "experience",
+                "education",
+                "skills",
+                "projects",
+                "customSections",
+            ],
+            layout: {
+                margins: { top: 20, bottom: 20, left: 20, right: 20 },
+                spacing: 1.2,
+                scale: 1,
+            },
+            tags: ["sample", "mock"],
+        };
+        const mockTemplate = "modern";
+        const mockVisibility = "private";
+
+        // Ensure unique slug
+        let slug = mockSlug;
+        let slugSuffix = 1;
+        while (await prisma.resume.findUnique({ where: { slug } })) {
+            slug = `${mockSlug}-${slugSuffix++}`;
         }
 
         const resume = await prisma.resume.create({
             data: {
-                title,
+                title: mockTitle,
                 slug,
-                data,
-                template,
-                visibility,
+                data: mockData,
+                template: mockTemplate,
+                visibility: mockVisibility,
                 userId: user.id,
             },
         });
@@ -87,19 +155,12 @@ export const createResume = async (req, res) => {
         }
 
         console.log(
-            `[RESUME] Resume saved successfully for user ${clerkUserId} (resumeId: ${resume.id})`
+            `[RESUME] Mock resume saved successfully for user ${clerkUserId} (resumeId: ${resume.id})`
         );
         res.status(201).json(resume);
     } catch (error) {
-        if (error.code === "P2002" && error.meta?.target?.includes("slug")) {
-            return res
-                .status(400)
-                .json({
-                    error: "A resume with this title/slug already exists. Please use a different title.",
-                });
-        }
-        console.error("Error creating resume:", error);
-        res.status(500).json({ error: "Failed to create resume" });
+        console.error("Error creating mock resume:", error);
+        res.status(500).json({ error: "Failed to create mock resume" });
     }
 };
 
