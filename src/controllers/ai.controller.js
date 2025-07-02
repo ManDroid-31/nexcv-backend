@@ -51,13 +51,16 @@ INSTRUCTIONS:
 - Do not ask questions or provide commentary
 - Ensure ATS compatibility`;
 
-        const result = await model.generateContent(`${systemPrompt}\n\n${prompt}`);
-        const content = await result.response.text();
-        if (!content) throw new Error("Empty AI response");
+        const result = await model.generateContent(prompt);
+        let content = await result.response.text();
+        if (!content || !content.trim()) {
+            content = "Sorry, I couldn't process your request right now. Please try again later.";
+        }
         return content.trim();
     } catch (error) {
         console.error("AI generation error:", error);
-        throw new Error("AI service unavailable");
+        // Always return a fallback
+        return "Sorry, I couldn't process your request right now. Please try again later.";
     }
 }
 
@@ -350,31 +353,29 @@ export const chatWithAI = async (req, res) => {
         if (!message) return res.status(400).json({ error: "Message required" });
 
         const history = await getCachedConversationHistory(userId, conversationId);
-        const contextPrompt = resume
-            ? `Current Resume Context:\n${JSON.stringify(resume, null, 2)}`
-            : "No resume provided";
-        const jobContext = jobDescription
-            ? `Job Description:\n${jobDescription}`
-            : "No job description provided";
-        const historyContext =
-            history.length > 0
-                ? `Recent Conversation History:\n${history
-                      .slice(0, 5)
-                      .map((h) => `User: ${h.prompt}\nAssistant: ${h.response}`)
-                      .join("\n\n")}`
-                : "No history";
+        const contextPrompt = `Resume Context:\n${compressResume(resume)}`;
+        const jobContext = `Job Description:\n${compressJobDescription(jobDescription)}`;
+        const historyContext = `Recent Conversation History:\n${compressHistory(history)}`;
 
-        const aiResponse = await generateAIResponse(`
+        const fallbackInstruction = `
+If you are unable to answer, always return a helpful, polite response. Never return an empty response. If you cannot answer, say: "Sorry, I couldn't process your request right now. Please try again later."
+`;
+
+        const aiPrompt = `
 ${contextPrompt}
 
 ${jobContext}
 
 ${historyContext}
 
-User: ${message}
+${fallbackInstruction}
 
-Assistant:`);
+User: ${message.slice(0, 500)}
 
+Assistant:
+`;
+
+        const aiResponse = await generateAIResponse(aiPrompt);
         const filteredResponse = filterAIResponse(aiResponse);
         const extractedData = extractResumeDataFromResponse(aiResponse);
 
@@ -494,3 +495,27 @@ export const testNormalization = async (req, res) => {
         res.status(500).json({ error: "Failed to test normalization", details: error.message });
     }
 };
+
+function compressResume(resume) {
+    if (!resume) return "No resume provided.";
+    // Only include key fields
+    const { personalInfo, summary, skills, experience } = resume;
+    return JSON.stringify({ personalInfo, summary, skills, experience }, null, 2);
+}
+
+function compressJobDescription(jobDescription) {
+    if (!jobDescription) return "No job description provided.";
+    // Truncate if too long
+    return jobDescription.length > 500 ? jobDescription.slice(0, 500) + "..." : jobDescription;
+}
+
+function compressHistory(history, maxPairs = 3) {
+    if (!history || !history.length) return "No history.";
+    // Only last N pairs, truncate long messages
+    return history
+        .slice(0, maxPairs)
+        .map(h => 
+            `User: ${h.prompt.slice(0, 200)}\nAssistant: ${h.response.slice(0, 200)}`
+        )
+        .join("\n\n");
+}
