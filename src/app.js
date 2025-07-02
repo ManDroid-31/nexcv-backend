@@ -73,6 +73,8 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 // All other credits routes (except webhook)
 app.use("/api/credits", creditsRoutes);
 
-app.listen(PORT, () => {
+
+// added 0.0.0.0 for anywhere access, cuz somehow it should work
+app.listen(PORT,'0.0.0.0', () => {
     logger.info(`Server running on port ${PORT}`);
 });
