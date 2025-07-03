@@ -663,13 +663,41 @@ function proxycurlToPlatformResume(data, userId, resumeId = "auto", title = "Imp
 // Controller to fetch LinkedIn data and format as resume (no AI, robust mapping)
 export const fetchLinkedInResume = async (req, res) => {
     try {
-        const { linkedinUrl, userId } = req.body;
+        const { linkedinUrl } = req.body;
         if (!linkedinUrl) {
             return res.status(400).json({ error: "linkedinUrl is required" });
         }
         const proxycurlApiKey = process.env.PROXYCURL_API_KEY;
         if (!proxycurlApiKey) {
             return res.status(500).json({ error: "Missing Proxycurl API key" });
+        }
+        // Get userId from request (authenticated user)
+        let clerkUserId;
+        try {
+            clerkUserId = getUserId(req);
+        } catch {
+            return res.status(401).json({ error: "Unauthorized: No Clerk user ID provided" });
+        }
+        // Find or create user by Clerk user ID
+        let user = await prisma.user.findUnique({ where: { clerkUserId } });
+        if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
+            user = await prisma.user.create({
+                data: {
+                    clerkUserId,
+                    email,
+                    name,
+                },
+            });
         }
         // Production: fetch real LinkedIn data from Proxycurl
         const apiUrl = `https://nubela.co/proxycurl/api/v2/linkedin?url=${encodeURIComponent(linkedinUrl)}&fallback_to_cache=on-error&use_cache=if-present&skills=include&inferred_salary=include&personal_email=include&personal_contact_number=include&twitter_profile_id=include&facebook_profile_id=include&github_profile_id=include&extra=include`;
@@ -683,19 +711,36 @@ export const fetchLinkedInResume = async (req, res) => {
                 .json({ error: "Failed to fetch from Proxycurl", details: errText });
         }
         const linkedInData = await response.json();
-        //
-        // For local testing, you can uncomment the below block and comment out the above fetch logic:
-        /*
-    const linkedInData = {
-        // ...mock data here...
-    }
-    */
         if (!linkedInData || Object.keys(linkedInData).length === 0) {
             return res.status(204).json({ error: "Empty data from Proxycurl" });
         }
         // Use robust converter
-        const resume = proxycurlToPlatformResume(linkedInData, userId || "imported-user");
-        return res.json({ resume });
+        const resumeObj = proxycurlToPlatformResume(linkedInData, user.id);
+        // Save the resume to the database
+        // Ensure unique slug
+        let slug = resumeObj.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        let slugSuffix = 1;
+        while (await prisma.resume.findUnique({ where: { slug } })) {
+            slug = `${slug}-${slugSuffix++}`;
+        }
+        const savedResume = await prisma.resume.create({
+            data: {
+                title: resumeObj.title,
+                slug,
+                data: resumeObj.data,
+                template: resumeObj.template || "modern",
+                visibility: resumeObj.visibility || "private",
+                userId: user.id,
+            },
+        });
+        if (cacheService.isConnected) {
+            await cacheService.cacheAIResponse(`resume:${savedResume.id}`, savedResume, 600);
+            await cacheService.clearCachePattern(`resumes:user:${clerkUserId}`);
+            if (savedResume.visibility === "public") {
+                await cacheService.cacheAIResponse(`resume:public:${savedResume.slug}`, savedResume, 600);
+            }
+        }
+        return res.json({ resume: savedResume });
     } catch (error) {
         console.error("Error in fetchLinkedInResume:", error);
         return res
