@@ -240,7 +240,7 @@ export const getResumeById = async (req, res) => {
         }
 
         // Owner view: require user to be owner
-        const clerkUserId = getUserId(req,false);
+        const clerkUserId = getUserId(req);
         if (resumeView === "ownerview" || !resumeView) {
             if (!clerkUserId) {
                 return res.status(401).json({ error: "Unauthorized: No user ID" });
