@@ -14,6 +14,9 @@ const prisma = new PrismaClient();
 // Helper function to get user ID (with fallback to default)
 const getUserId = (req, allowUnauthenticated = false) => {
     // Use Clerk user ID from header-based auth
+    if (req.headers['x-clerk-user-id']) {
+        return req.headers['x-clerk-user-id'];
+    }
     if (req.auth && req.auth.userId) {
         return req.auth.userId;
     }
@@ -125,7 +128,7 @@ export const createResume = async (req, res) => {
             },
             tags: ["sample", "mock"],
         };
-        const mockTemplate = "modern";
+        const mockTemplate = "onyx";
         const mockVisibility = "private";
 
         // Ensure unique slug
@@ -211,7 +214,8 @@ export const getAllResumes = async (req, res) => {
 export const getResumeById = async (req, res) => {
     try {
         const { id } = req.params;
-        const resumeView = req.resumeView;
+        const resumeView = req.headers['x-resume-view'];
+        console.dir(id,resumeView)
 
         let resume = null;
         if (cacheService.isConnected) {
