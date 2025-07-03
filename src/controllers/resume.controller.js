@@ -239,17 +239,14 @@ export const getResumeById = async (req, res) => {
         }
 
         // Owner view (or default): require auth and ownership
-        // Get Clerk user ID from header or auth middleware
-        let clerkUserId = null;
-        if (req.headers['x-clerk-user-id']) {
-            clerkUserId = req.headers['x-clerk-user-id'];
-        } else if (req.auth && req.auth.userId) {
-            clerkUserId = req.auth.userId;
-        }
-        if (!clerkUserId) {
+        // Use robust getUserId helper (like getAllResumes)
+        let clerkUserId;
+        try {
+            clerkUserId = getUserId(req);
+        } catch {
             return res.status(401).json({ error: "Unauthorized: No Clerk user ID provided" });
         }
-        // Find or create user by Clerk user ID
+        // Find or create user by Clerk user ID (same as getAllResumes)
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
         if (!user) {
             // Fetch from Clerk
