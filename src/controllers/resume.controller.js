@@ -214,9 +214,8 @@ export const getAllResumes = async (req, res) => {
 export const getResumeById = async (req, res) => {
     try {
         const { id } = req.params;
-        const resumeView = req.headers['x-resume-view'];
-        console.dir(id,resumeView)
-
+        // Accept view from header or query param
+        const resumeView = req.headers['x-resume-view'] || req.query.view || null;
         let resume = null;
         if (cacheService.isConnected) {
             resume = await cacheService.getCachedResponse(`resume:${id}`);
@@ -231,7 +230,7 @@ export const getResumeById = async (req, res) => {
             return res.status(404).json({ error: "Resume not found" });
         }
 
-        // Public view: only allow public resumes
+        // Public view: only allow public resumes, no auth required
         if (resumeView === "publicview") {
             if (resume.visibility !== "public") {
                 return res.status(403).json({ error: "Access denied: Not a public resume" });
@@ -239,40 +238,43 @@ export const getResumeById = async (req, res) => {
             return res.json(resume);
         }
 
-        // Owner view: require user to be owner
-        const clerkUserId = getUserId(req);
-        if (resumeView === "ownerview" || !resumeView) {
-            if (!clerkUserId) {
-                return res.status(401).json({ error: "Unauthorized: No user ID" });
-            }
-            let user = await prisma.user.findUnique({ where: { clerkUserId } });
-            if (!user) {
-                // Fetch from Clerk
-                let email = "user@example.com";
-                let name = "User";
-                try {
-                    const clerkUser = await users.getUser(clerkUserId);
-                    email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
-                    name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
-                } catch (err) {
-                    console.warn("Could not fetch Clerk user info, using defaults.", err.message);
-                }
-                user = await prisma.user.create({
-                    data: {
-                        clerkUserId,
-                        email,
-                        name,
-                    },
-                });
-            }
-            if (resume.userId !== user.id) {
-                return res.status(403).json({ error: "Access denied: Not your resume" });
-            }
-            return res.json(resume);
+        // Owner view (or default): require auth and ownership
+        // Get Clerk user ID from header or auth middleware
+        let clerkUserId = null;
+        if (req.headers['x-clerk-user-id']) {
+            clerkUserId = req.headers['x-clerk-user-id'];
+        } else if (req.auth && req.auth.userId) {
+            clerkUserId = req.auth.userId;
         }
-
-        // Fallback: deny
-        return res.status(403).json({ error: "Access denied" });
+        if (!clerkUserId) {
+            return res.status(401).json({ error: "Unauthorized: No Clerk user ID provided" });
+        }
+        // Find or create user by Clerk user ID
+        let user = await prisma.user.findUnique({ where: { clerkUserId } });
+        if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
+            user = await prisma.user.create({
+                data: {
+                    clerkUserId,
+                    email,
+                    name,
+                },
+            });
+        }
+        // Only allow if user is the owner
+        if (resume.userId !== user.id) {
+            return res.status(403).json({ error: "Access denied: Not your resume" });
+        }
+        return res.json(resume);
     } catch (error) {
         console.error("Error fetching resume:", error);
         res.status(500).json({ error: "Failed to fetch resume" });
