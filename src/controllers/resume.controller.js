@@ -230,13 +230,18 @@ export const getResumeById = async (req, res) => {
             return res.status(404).json({ error: "Resume not found" });
         }
 
-        // Public view: only allow public resumes, no auth required
-        if (resumeView === "publicview") {
+        console.log("resumeView:", resumeView, "resume.visibility:", resume?.visibility);
+
+        if (resumeView === "publicview" || resumeView === "public" || resumeView === "guest") {
+            console.log("Public view branch hit");
             if (resume.visibility !== "public") {
+                console.log("Resume is not public");
                 return res.status(403).json({ error: "Access denied: Not a public resume" });
             }
+            console.log("Returning public resume");
             return res.json(resume);
         }
+        console.log("Falling through to owner/auth branch");
 
         // Owner view (or default): require auth and ownership
         // Use robust getUserId helper (like getAllResumes)
