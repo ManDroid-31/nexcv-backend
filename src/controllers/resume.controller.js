@@ -193,6 +193,7 @@ export const getAllResumes = async (req, res) => {
                     clerkUserId,
                     email,
                     name,
+                    creditBalance: 10,
                 },
             });
         }
@@ -275,6 +276,7 @@ export const getResumeById = async (req, res) => {
                     clerkUserId,
                     email,
                     name,
+                    creditBalance: 10,
                 },
             });
         }
@@ -346,6 +348,7 @@ export const updateResume = async (req, res) => {
                     clerkUserId,
                     email,
                     name,
+                    creditBalance: 10,
                 },
             });
         }
@@ -728,6 +731,7 @@ export const fetchLinkedInResume = async (req, res) => {
                     clerkUserId,
                     email,
                     name,
+                    creditBalance: 10,
                 },
             });
         }
@@ -764,10 +768,7 @@ export const fetchLinkedInResume = async (req, res) => {
                 );
             }
         }
-        if (process.env.CI === "true") {
-            // Return mock LinkedIn data
-            return res.json({ resume: { /* ...mock data... */ } });
-        }
+        // Remove CI mock return. Always return the saved resume.
         return res.json({ resume: savedResume });
     } catch (error) {
         console.error("Error in fetchLinkedInResume:", error);
