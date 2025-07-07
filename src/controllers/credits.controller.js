@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { users } from "@clerk/clerk-sdk-node";
 
 dotenv.config();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "no api keys 🥺");
 const prisma = new PrismaClient();
 
 // Configurable price per credit (in paise - 100 paise = 1 rupee)

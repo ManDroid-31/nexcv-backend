@@ -9,6 +9,8 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
+        env:
+            STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
         strategy:
             matrix:
@@ -35,6 +37,15 @@ jobs:
 
             - name: 💅 Check Prettier formatting
               run: npm run format:check
+
+            - name: Debug Stripe Key
+              run: |
+                if [ -z "$STRIPE_SECRET_KEY" ]; then
+                  echo "STRIPE_SECRET_KEY is NOT set"
+                  exit 1
+                else
+                  echo "STRIPE_SECRET_KEY is set"
+                fi
 
             - name: Start server and check health
               run: |

@@ -653,16 +653,55 @@ function proxycurlToPlatformResume(data, userId, resumeId = "auto", title = "Imp
     };
 }
 
-// Controller to fetch LinkedIn data and format as resume (no AI, robust mapping)
+// In-memory index for Enrichlayer API key rotation
+let enrichlayerKeyIndex = 1;
+
+async function getWorkingEnrichlayerKey() {
+    let attempts = 0;
+    while (attempts < 7) {
+        const apiKey = process.env[`PROXYCURL_API_KEY${enrichlayerKeyIndex}`];
+        // Check credit balance
+        const balanceRes = await fetch("https://enrichlayer.com/api/v2/credit-balance", {
+            headers: { Authorization: `Bearer ${apiKey}` }
+        });
+        if (balanceRes.ok) {
+            const data = await balanceRes.json();
+            if (data.credit_balance && data.credit_balance >= 2) {
+                return apiKey;
+            }
+        }
+        // Move to next key
+        enrichlayerKeyIndex = enrichlayerKeyIndex % 7 + 1;
+        attempts++;
+    }
+    throw new Error("All Enrichlayer API keys are out of credits.");
+}
+
 export const fetchLinkedInResume = async (req, res) => {
     try {
         const { linkedinUrl } = req.body;
         if (!linkedinUrl) {
             return res.status(400).json({ error: "linkedinUrl is required" });
         }
-        const proxycurlApiKey = process.env.PROXYCURL_API_KEY;
-        if (!proxycurlApiKey) {
-            return res.status(500).json({ error: "Missing Proxycurl API key" });
+        // Find a working Enrichlayer API key
+        let apiKey;
+        try {
+            apiKey = await getWorkingEnrichlayerKey();
+        } catch {
+            return res.status(503).json({ error: "All Enrichlayer API keys are out of credits." });
+        }
+        // Use enrichlayer.com API for profile fetch
+        const apiUrl = `https://enrichlayer.com/api/v2/profile?url=${encodeURIComponent(linkedinUrl)}`;
+        const response = await fetch(apiUrl, {
+            headers: { Authorization: `Bearer ${apiKey}` }
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            return res.status(502).json({ error: "Failed to fetch from Enrichlayer", details: errText });
+        }
+        const linkedInData = await response.json();
+        if (!linkedInData || Object.keys(linkedInData).length === 0) {
+            return res.status(204).json({ error: "Empty data from Enrichlayer" });
         }
         // Get userId from request (authenticated user)
         let clerkUserId;
@@ -691,21 +730,6 @@ export const fetchLinkedInResume = async (req, res) => {
                     name,
                 },
             });
-        }
-        // Production: fetch real LinkedIn data from Proxycurl
-        const apiUrl = `https://nubela.co/proxycurl/api/v2/linkedin?url=${encodeURIComponent(linkedinUrl)}&fallback_to_cache=on-error&use_cache=if-present&skills=include&inferred_salary=include&personal_email=include&personal_contact_number=include&twitter_profile_id=include&facebook_profile_id=include&github_profile_id=include&extra=include`;
-        const response = await fetch(apiUrl, {
-            headers: { Authorization: `Bearer ${proxycurlApiKey}` },
-        });
-        if (!response.ok) {
-            const errText = await response.text();
-            return res
-                .status(502)
-                .json({ error: "Failed to fetch from Proxycurl", details: errText });
-        }
-        const linkedInData = await response.json();
-        if (!linkedInData || Object.keys(linkedInData).length === 0) {
-            return res.status(204).json({ error: "Empty data from Proxycurl" });
         }
         // Use robust converter
         const resumeObj = proxycurlToPlatformResume(linkedInData, user.id);
