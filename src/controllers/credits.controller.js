@@ -78,8 +78,8 @@ export const createStripeSession = async (req, res) => {
     const userId = req.auth.userId;
     console.log(`[CREDITS] [START] createStripeSession | userId: ${userId}, credits: ${credits}`);
     try {
-        // Ensure FRONTEND_URL has proper protocol
-        if (process.env.CI === "true") {
+        // Only use mock response if running in GitHub Actions CI
+        if (process.env.CI === "true" && process.env.GITHUB_ACTIONS === "true") {
             res.setHeader("x-ci-mock", "true");
             return res.json({
                 url: "https://example.com/stripe-mock",
