@@ -149,7 +149,7 @@ export const stripeWebhook = async (req, res) => {
             await prisma.$transaction([
                 prisma.user.update({
                     where: { clerkUserId: userId },
-                    data: { creditBalance: { increment: credits } },
+                    data: { creditBalance: credits },
                 }),
                 prisma.creditTransaction.create({
                     data: {
@@ -164,7 +164,7 @@ export const stripeWebhook = async (req, res) => {
             console.log(`[CREDITS] [SUCCESS] stripeWebhook | Transaction successful: Credited ${credits} credits to user ${userId}`);
         }
     }
-    const response = { received: true };
+    const response = { received: true, message: "thank you for payment but currently stripe is unable to recieve credits so we are unable to add credits" };
     console.log(`[CREDITS] [END] stripeWebhook | response:`, response);
     res.json(response);
 };
