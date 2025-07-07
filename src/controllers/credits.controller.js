@@ -78,10 +78,16 @@ export const createStripeSession = async (req, res) => {
     const userId = req.auth.userId;
     console.log(`[CREDITS] [START] createStripeSession | userId: ${userId}, credits: ${credits}`);
     try {
-        if (process.env.CI === "true") {
-            return res.json({ url: "https://example.com/stripe-mock", message: "CI mode: Stripe not called" });
-        }
         // Ensure FRONTEND_URL has proper protocol
+        if (process.env.CI === "true") {
+            res.setHeader("x-ci-mock", "true");
+            return res.json({
+                url: "https://example.com/stripe-mock",
+                id: "ci-session-id",
+                sessionId: "ci-session-id",
+                message: "CI mode: Stripe not called"
+            });
+        }
         const frontendUrl = "https://nexcv.vercel.app";
         const successUrl = frontendUrl.startsWith("http") ? frontendUrl : `https://${frontendUrl}`;
         const session = await stripe.checkout.sessions.create({
