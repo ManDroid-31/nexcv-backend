@@ -10,7 +10,9 @@ jobs:
     build:
         runs-on: ubuntu-latest
         env:
-            STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+            STRIPE_SECRET_KEY: "true"
+            CLERK_PUBLISHABLE_KEY: "true"
+            CLERK_SECRET_KEY: "true"
 
         strategy:
             matrix:
