@@ -84,6 +84,11 @@ class CacheService {
     }
 
     async connect() {
+        if (process.env.CI === "true") {
+            console.log("[CI MODE] Skipping Redis connection");
+            this.isConnected = false;
+            return;
+        }
         try {
             this.client = createClient({
                 url: process.env.REDIS_URL || "redis://localhost:6379",

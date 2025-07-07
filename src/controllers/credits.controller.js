@@ -78,8 +78,11 @@ export const createStripeSession = async (req, res) => {
     const userId = req.auth.userId;
     console.log(`[CREDITS] [START] createStripeSession | userId: ${userId}, credits: ${credits}`);
     try {
+        if (process.env.CI === "true") {
+            return res.json({ url: "https://example.com/stripe-mock", message: "CI mode: Stripe not called" });
+        }
         // Ensure FRONTEND_URL has proper protocol
-        const frontendUrl = "https://nexcv.vercel.app/credits/success";
+        const frontendUrl = "https://nexcv.vercel.app";
         const successUrl = frontendUrl.startsWith("http") ? frontendUrl : `https://${frontendUrl}`;
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
