@@ -14,8 +14,8 @@ const prisma = new PrismaClient();
 // Helper function to get user ID (with fallback to default)
 const getUserId = (req, allowUnauthenticated = false) => {
     // Use Clerk user ID from header-based auth
-    if (req.headers['x-clerk-user-id']) {
-        return req.headers['x-clerk-user-id'];
+    if (req.headers["x-clerk-user-id"]) {
+        return req.headers["x-clerk-user-id"];
     }
     if (req.auth && req.auth.userId) {
         return req.auth.userId;
@@ -59,7 +59,10 @@ export const createResume = async (req, res) => {
 
         // Mock resume data
         const mockTitle = "Sample Resume";
-        const mockSlug = mockTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        const mockSlug = mockTitle
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
         const mockData = {
             personalInfo: {
                 name: user.name,
@@ -80,7 +83,8 @@ export const createResume = async (req, res) => {
                     startDate: "2022-01",
                     endDate: "2024-01",
                     current: false,
-                    description: "Developed scalable web applications and collaborated with cross-functional teams.",
+                    description:
+                        "Developed scalable web applications and collaborated with cross-functional teams.",
                     achievements: [
                         "Improved application performance by 30%",
                         "Mentored junior developers",
@@ -97,7 +101,8 @@ export const createResume = async (req, res) => {
                     endDate: "2022-05",
                     current: false,
                     gpa: "3.8",
-                    description: "Relevant coursework: Data Structures, Algorithms, Software Engineering",
+                    description:
+                        "Relevant coursework: Data Structures, Algorithms, Software Engineering",
                 },
             ],
             skills: ["JavaScript", "React", "Node.js", "MongoDB", "AWS", "Docker"],
@@ -216,7 +221,7 @@ export const getResumeById = async (req, res) => {
     try {
         const { id } = req.params;
         // Accept view from header or query param
-        const resumeView = req.headers['x-resume-view'] || req.query.view || null;
+        const resumeView = req.headers["x-resume-view"] || req.query.view || null;
         let resume = null;
         if (cacheService.isConnected) {
             resume = await cacheService.getCachedResponse(`resume:${id}`);
@@ -416,7 +421,7 @@ export const deleteResume = async (req, res) => {
         const { id } = req.params;
         const clerkUserId = getUserId(req);
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
-        if(!user) return res.status(401).json({message:"user is  not authenticated"})
+        if (!user) return res.status(401).json({ message: "user is  not authenticated" });
         const existingResume = await prisma.resume.findFirst({ where: { id } });
         if (!existingResume) {
             return res.status(404).json({ error: "Resume not found" });
@@ -706,7 +711,10 @@ export const fetchLinkedInResume = async (req, res) => {
         const resumeObj = proxycurlToPlatformResume(linkedInData, user.id);
         // Save the resume to the database
         // Ensure unique slug
-        let slug = resumeObj.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        let slug = resumeObj.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
         let slugSuffix = 1;
         while (await prisma.resume.findUnique({ where: { slug } })) {
             slug = `${slug}-${slugSuffix++}`;
@@ -725,7 +733,11 @@ export const fetchLinkedInResume = async (req, res) => {
             await cacheService.cacheAIResponse(`resume:${savedResume.id}`, savedResume, 600);
             await cacheService.clearCachePattern(`resumes:user:${clerkUserId}`);
             if (savedResume.visibility === "public") {
-                await cacheService.cacheAIResponse(`resume:public:${savedResume.slug}`, savedResume, 600);
+                await cacheService.cacheAIResponse(
+                    `resume:public:${savedResume.slug}`,
+                    savedResume,
+                    600
+                );
             }
         }
         return res.json({ resume: savedResume });

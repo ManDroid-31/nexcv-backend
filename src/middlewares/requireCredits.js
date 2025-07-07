@@ -30,7 +30,8 @@ const requireCredits = (cost, type) => {
                 try {
                     const clerkUser = await users.getUser(clerkUserId);
                     email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
-                    name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+                    name =
+                        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
                 } catch (err) {
                     console.warn("Could not fetch Clerk user info, using defaults.", err.message);
                 }
@@ -45,7 +46,13 @@ const requireCredits = (cost, type) => {
             }
 
             if (user.creditBalance < cost) {
-                return res.status(403).json({ error: "Not enough credits" });
+                return res
+                    .status(403)
+                    .json({
+                        error: "Not enough credits",
+                        message:
+                            "You do not have enough credits. Please purchase more to continue.",
+                    });
             }
 
             await prisma.$transaction([
@@ -71,7 +78,12 @@ const requireCredits = (cost, type) => {
             next();
         } catch (err) {
             console.error("Error in requireCredits middleware:", err);
-            return res.status(500).json({ error: "Failed to process credits" });
+            return res
+                .status(500)
+                .json({
+                    error: "Failed to process credits. Stripe may be unavailable. Please try again later.",
+                    message: "Stripe is currently unavailable. Please try again later.",
+                });
         }
     };
 };

@@ -58,7 +58,7 @@ protectedRoute.get("/me/credits", async (req, res) => {
         }
 
         console.log("user-credits: ", user.creditBalance);
-        res.json({ credits: user.creditBalance });
+        res.json({ credits: user.creditBalance, message: "Thank you for using NexCV!" });
     } catch (error) {
         console.error("Error fetching credits:", error);
         res.status(500).json({ error: "Failed to fetch credits" });

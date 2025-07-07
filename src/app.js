@@ -12,7 +12,7 @@ import creditsRoutes from "./routes/credits.routes.js";
 import * as creditsController from "./controllers/credits.controller.js";
 import pino from "pino";
 
-const logger = pino({ level: process.env.LOG_LEVEL || 'info' });
+const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
 dotenv.config();
 
@@ -21,10 +21,14 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({ origin: process.env.FRONTEND_URL || true }));
-app.set('trust proxy', true);
+app.set("trust proxy", true);
 
 // Stripe webhook route (must be before express.json)
-app.post('/api/credits/webhook', express.raw({ type: 'application/json' }), creditsController.stripeWebhook);
+app.post(
+    "/api/credits/webhook",
+    express.raw({ type: "application/json" }),
+    creditsController.stripeWebhook
+);
 
 // Body parsers for all other routes
 app.use(express.json({ limit: "10mb" }));
@@ -73,8 +77,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 // All other credits routes (except webhook)
 app.use("/api/credits", creditsRoutes);
 
-
 // added 0.0.0.0 for anywhere access, cuz somehow it should work
-app.listen(PORT,'0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
     logger.info(`Server running on port ${PORT}`);
 });

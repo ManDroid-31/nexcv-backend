@@ -502,8 +502,6 @@ function compressHistory(history, maxPairs = 3) {
     // Only last N pairs, truncate long messages
     return history
         .slice(0, maxPairs)
-        .map(h => 
-            `User: ${h.prompt.slice(0, 200)}\nAssistant: ${h.response.slice(0, 200)}`
-        )
+        .map((h) => `User: ${h.prompt.slice(0, 200)}\nAssistant: ${h.response.slice(0, 200)}`)
         .join("\n\n");
 }
