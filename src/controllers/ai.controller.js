@@ -39,18 +39,6 @@ async function generateAIResponse(prompt, modelType = "gemini-2.5-flash") {
         const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
         const model = genAI.getGenerativeModel({ model: modelType });
 
-        const systemPrompt = `You are an expert resume writer and career consultant specializing in ATS-friendly resumes.
-
-INSTRUCTIONS:
-- Return only the requested content
-- Use professional, industry-standard language
-- Focus on quantifiable achievements and measurable impact
-- Use strong action verbs (e.g., Developed, Led, Optimized)
-- Correct grammatical errors and typos
-- Avoid markdown, bullet points, or numbering unless specified
-- Do not ask questions or provide commentary
-- Ensure ATS compatibility`;
-
         const result = await model.generateContent(prompt);
         let content = await result.response.text();
         if (!content || !content.trim()) {
