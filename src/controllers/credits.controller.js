@@ -79,15 +79,15 @@ export const createStripeSession = async (req, res) => {
     console.log(`[CREDITS] [START] createStripeSession | userId: ${userId}, credits: ${credits}`);
     try {
         // Only use mock response if running in GitHub Actions CI
-        if (process.env.CI === "true" && process.env.GITHUB_ACTIONS === "true") {
-            res.setHeader("x-ci-mock", "true");
-            return res.json({
-                url: "https://example.com/stripe-mock",
-                id: "ci-session-id",
-                sessionId: "ci-session-id",
-                message: "CI mode: Stripe not called"
-            });
-        }
+        // if (process.env.CI === "true" && process.env.GITHUB_ACTIONS === "true") {
+        //     res.setHeader("x-ci-mock", "true");
+        //     return res.json({
+        //         url: "https://example.com/stripe-mock",
+        //         id: "ci-session-id",
+        //         sessionId: "ci-session-id",
+        //         message: "Transaction successful (CI mock): Your payment was processed successfully in test mode. No real credits have been added."
+        //     });
+        // }
         const frontendUrl = "https://nexcv.vercel.app";
         const successUrl = frontendUrl.startsWith("http") ? frontendUrl : `https://${frontendUrl}`;
         const session = await stripe.checkout.sessions.create({
