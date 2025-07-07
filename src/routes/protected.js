@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import clerkHeaderAuth from "../middlewares/clerkHeaderAuth.middleware.js";
 import { authMiddleware } from "../middlewares/clerkAuth.middleware.js";
+import { users } from "@clerk/clerk-sdk-node";
 dotenv.config();
 
 const protectedRoute = express.Router();
@@ -36,12 +37,22 @@ protectedRoute.get("/me/credits", async (req, res) => {
         });
 
         if (!user) {
-            // Create a new user record for this Clerk user
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
             user = await prisma.user.create({
                 data: {
                     clerkUserId,
-                    email: "user@example.com", // You might want to get this from Clerk
-                    name: "User", // You might want to get this from Clerk
+                    email,
+                    name,
+                    creditBalance: 10,
                 },
             });
         }

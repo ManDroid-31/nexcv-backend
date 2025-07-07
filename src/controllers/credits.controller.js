@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+import { users } from "@clerk/clerk-sdk-node";
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -69,7 +70,7 @@ export const createStripeSession = async (req, res) => {
     console.log(`[CREDITS] [START] createStripeSession | userId: ${userId}, credits: ${credits}`);
     try {
         // Ensure FRONTEND_URL has proper protocol
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = 'https://nexcv.vercel.app/credits/success';
         const successUrl = frontendUrl.startsWith('http') ? frontendUrl : `https://${frontendUrl}`;
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
@@ -126,11 +127,22 @@ export const stripeWebhook = async (req, res) => {
         if (userId && credits > 0) {
             let user = await prisma.user.findUnique({ where: { clerkUserId: userId } });
             if (!user) {
+                // Fetch from Clerk
+                let email = "user@example.com";
+                let name = "User";
+                try {
+                    const clerkUser = await users.getUser(userId);
+                    email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                    name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+                } catch (err) {
+                    console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+                }
                 user = await prisma.user.create({
                     data: {
                         clerkUserId: userId,
-                        email: "user@example.com",
-                        name: "User",
+                        email,
+                        name,
+                        creditBalance: 10,
                     },
                 });
             }
@@ -168,11 +180,22 @@ export const addCredits = async (req, res) => {
         }
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
         if (!user) {
+            // Fetch from Clerk
+            let email = "user@example.com";
+            let name = "User";
+            try {
+                const clerkUser = await users.getUser(clerkUserId);
+                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+            } catch (err) {
+                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+            }
             user = await prisma.user.create({
                 data: {
                     clerkUserId,
-                    email: "user@example.com",
-                    name: "User",
+                    email,
+                    name,
+                    creditBalance: 10,
                 },
             });
         }

@@ -52,6 +52,7 @@ export const createResume = async (req, res) => {
                     clerkUserId,
                     email,
                     name,
+                    creditBalance: 10,
                 },
             });
         }
@@ -415,25 +416,7 @@ export const deleteResume = async (req, res) => {
         const { id } = req.params;
         const clerkUserId = getUserId(req);
         let user = await prisma.user.findUnique({ where: { clerkUserId } });
-        if (!user) {
-            // Fetch from Clerk
-            let email = "user@example.com";
-            let name = "User";
-            try {
-                const clerkUser = await users.getUser(clerkUserId);
-                email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
-                name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
-            } catch (err) {
-                console.warn("Could not fetch Clerk user info, using defaults.", err.message);
-            }
-            user = await prisma.user.create({
-                data: {
-                    clerkUserId,
-                    email,
-                    name,
-                },
-            });
-        }
+        if(!user) return res.status(401).json({message:"user is  not authenticated"})
         const existingResume = await prisma.resume.findFirst({ where: { id } });
         if (!existingResume) {
             return res.status(404).json({ error: "Resume not found" });

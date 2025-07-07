@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { users } from "@clerk/clerk-sdk-node";
 
 const prisma = new PrismaClient();
 
@@ -23,12 +24,22 @@ const requireCredits = (cost, type) => {
             let user = await prisma.user.findUnique({ where: { clerkUserId } });
 
             if (!user) {
-                // Auto-create user if not found
+                // Fetch from Clerk
+                let email = "user@example.com";
+                let name = "User";
+                try {
+                    const clerkUser = await users.getUser(clerkUserId);
+                    email = clerkUser.emailAddresses?.[0]?.emailAddress || email;
+                    name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || name;
+                } catch (err) {
+                    console.warn("Could not fetch Clerk user info, using defaults.", err.message);
+                }
                 user = await prisma.user.create({
                     data: {
                         clerkUserId,
-                        email: "user@example.com", // Optionally get from Clerk
-                        name: "User",
+                        email,
+                        name,
+                        creditBalance: 10,
                     },
                 });
             }
