@@ -78,16 +78,6 @@ export const createStripeSession = async (req, res) => {
     const userId = req.auth.userId;
     console.log(`[CREDITS] [START] createStripeSession | userId: ${userId}, credits: ${credits}`);
     try {
-        // Only use mock response if running in GitHub Actions CI
-        // if (process.env.CI === "true" && process.env.GITHUB_ACTIONS === "true") {
-        //     res.setHeader("x-ci-mock", "true");
-        //     return res.json({
-        //         url: "https://example.com/stripe-mock",
-        //         id: "ci-session-id",
-        //         sessionId: "ci-session-id",
-        //         message: "Transaction successful (CI mock): Your payment was processed successfully in test mode. No real credits have been added."
-        //     });
-        // }
         const frontendUrl = "https://nexcv.vercel.app";
         const successUrl = frontendUrl.startsWith("http") ? frontendUrl : `https://${frontendUrl}`;
         const session = await stripe.checkout.sessions.create({
@@ -114,8 +104,10 @@ export const createStripeSession = async (req, res) => {
         });
         const response = {
             url: session.url,
-            message:
-                "Thank you for your payment! This is a test account, so no credits will be added.",
+            id: session.id,
+            sessionId: session.id,
+            message: "Transaction successful: Your payment was processed successfully in test/demo mode. No real credits have been added to your account.",
+            status: "success"
         };
         console.log(
             `[CREDITS] [SUCCESS] createStripeSession | userId: ${userId}, credits: ${credits} | response:`,
@@ -129,7 +121,8 @@ export const createStripeSession = async (req, res) => {
         );
         res.status(500).json({
             error: "Failed to create Stripe session. Stripe is currently unavailable. Please try again later.",
-            message: "Stripe is currently unavailable. Please try again later.",
+            message: "Transaction failed: Stripe is currently unavailable. Please try again later. No credits have been added.",
+            status: "failure"
         });
     }
 };
@@ -147,14 +140,18 @@ export const stripeWebhook = async (req, res) => {
 
     console.log(`[CREDITS] [EVENT] stripeWebhook | event.type: ${event.type}`);
     let message = "";
+    let status = "unknown";
     if (event.type === "checkout.session.completed") {
-        message =
-            "Stripe payment successful, but this is a test account. No credits have been added.";
+        message = "Stripe payment successful, but this is a test/demo account. No credits have been added.";
+        status = "success";
         console.log(
             "[CREDITS] [TEST MODE] stripeWebhook | Payment received, but no credits added."
         );
+    } else {
+        message = `Stripe event received: ${event.type}. No credits have been added.`;
+        status = "info";
     }
-    const response = { received: true, message };
+    const response = { received: true, message, status };
     console.log(`[CREDITS] [END] stripeWebhook | response:`, response);
     res.json(response);
 };
