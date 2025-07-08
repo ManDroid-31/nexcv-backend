@@ -186,16 +186,6 @@ OPTIMIZED RESUME:`;
 // Enhanced resume endpoint with job tailoring and ATS optimization
 export const enhanceResume = async (req, res) => {
     try {
-        if (process.env.CI === "true") {
-            // Return mock enhanced resume in CI
-            return res.json({
-                enhanced: { summary: "Mock summary", skills: ["Mock skill 1", "Mock skill 2"] },
-                cached: false,
-                source: "ci_mock",
-                jobTailoring: false,
-                atsOptimized: false,
-            });
-        }
         console.log("request for enhance resume");
         const { resume, jobDescription } = req.body;
         if (!resume) return res.status(400).json({ error: "Missing resume JSON" });
@@ -345,13 +335,6 @@ ENHANCED ITEM:`;
 // Chat with AI
 export const chatWithAI = async (req, res) => {
     try {
-        if (process.env.CI === "true") {
-            return res.json({
-                response: "This is a mock AI response (CI mode)",
-                conversationId: "ci-conv-id",
-                contextUsed: { hasResume: false, hasJobDescription: false, historyLength: 0, cached: false, source: "ci_mock" },
-            });
-        }
         const { message, conversationId, resume, jobDescription } = req.body;
         const userId = getUserId(req);
 
